@@ -35,16 +35,12 @@ fn main() {
     }
 
     for i in list2.iter() {
-        if let Some(val) = list1_map.get(i) {
-            list1_map.insert(*i, val + 1);
-        }
+        list1_map.entry(*i).and_modify(|e| *e += 1);
     }
 
     let mut sum = 0;
     for i in list1.iter() {
-        if let Some(val) = list1_map.get(i) {
-            sum += i * val;
-        }
+        sum += &*list1_map.entry(*i).or_default() * i;
     }
     println!("result: {}", sum);
 }
