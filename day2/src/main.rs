@@ -10,11 +10,7 @@ fn main() {
     let mut count = 0;
     for line in reader.lines() {
         if let Ok(line) = line {
-            let levels = line
-                .split_whitespace()
-                .map(|s| s.parse::<i32>().unwrap())
-                .collect::<Vec<_>>();
-            if is_safe_report(&levels) {
+            if is_safe_report(&parse_levels(line)) {
                 count += 1;
             }
         }
@@ -28,10 +24,7 @@ fn main() {
     let mut count2 = 0;
     for line in reader2.lines() {
         if let Ok(line) = line {
-            let levels = line
-                .split_whitespace()
-                .map(|s| s.parse::<i32>().unwrap())
-                .collect::<Vec<_>>();
+            let levels = parse_levels(line);
             if is_safe_report(&levels) {
                 count2 += 1;
             } else {
@@ -47,6 +40,12 @@ fn main() {
         }
     }
     println!("count2 = {}", count2);
+}
+
+fn parse_levels(s: String) -> Vec<i32> {
+    s.split_whitespace()
+        .map(|s| s.parse::<i32>().unwrap())
+        .collect::<Vec<_>>()
 }
 
 fn is_safe_report(levels: &[i32]) -> bool {
