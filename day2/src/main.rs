@@ -61,11 +61,7 @@ fn is_safe_report(levels: &[i32]) -> bool {
                 return false;
             }
         } else {
-            is_increasing = if window[1] > window[0] {
-                Some(true)
-            } else {
-                Some(false)
-            }
+            is_increasing = Some(window[1] > window[0])
         }
     }
 
