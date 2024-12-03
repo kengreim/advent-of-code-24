@@ -1,15 +1,33 @@
 #![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 
-use std::fs::File;
-use std::io::{BufRead, BufReader};
+use regex::Regex;
+use std::fs;
 
 fn main() {
     const PATH: &str = "day3/src/day3_input.txt";
 
     // Part 1
-    let file = File::open(PATH).expect("file not found");
-    let reader = BufReader::new(file);
-    for line in reader.lines().map_while(Result::ok) {
-        println!("{}", line)
+    let input = fs::read_to_string(PATH).unwrap();
+    let re = Regex::new(r"mul\(([0-9]+),([0-9]+)\)").unwrap();
+    let sum = re.captures_iter(&input).fold(0, |acc, capture| {
+        acc + capture[1].parse::<i32>().unwrap() * capture[2].parse::<i32>().unwrap()
+    });
+    println!("Sum: {sum}");
+
+    // Part 2
+    let re2 = Regex::new(r"do\(\)|don't\(\)|mul\(([0-9]+),([0-9]+)\)").unwrap();
+    let mut enabled = true;
+    let mut sum2 = 0;
+    for capture in re2.captures_iter(&input) {
+        match &capture[0] {
+            "do()" => enabled = true,
+            "don't()" => enabled = false,
+            _ => {
+                sum2 += enabled as i32
+                    * &capture[1].parse::<i32>().unwrap()
+                    * &capture[2].parse::<i32>().unwrap()
+            }
+        }
     }
+    println!("Sum2: {sum2}");
 }
