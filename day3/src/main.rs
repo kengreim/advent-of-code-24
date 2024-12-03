@@ -33,17 +33,17 @@ fn main() {
 
     // Part 2 functional
     let re2 = Regex::new(r"do\(\)|don't\(\)|mul\(([0-9]+),([0-9]+)\)").unwrap();
-    let sum3 =
-        re2.captures_iter(&input)
-            .fold((0, true), |(sum, enabled), capture| match &capture[0] {
-                "do()" => (sum, true),
-                "don't()" => (sum, false),
-                _ => (
-                    sum + enabled as i32
-                        * &capture[1].parse::<i32>().unwrap()
-                        * &capture[2].parse::<i32>().unwrap(),
-                    enabled,
-                ),
-            });
-    println!("Sum3: {}", sum3.0);
+    let (sum3, _) = re2
+        .captures_iter(&input)
+        .fold((0, true), |(sum, enabled), capture| match &capture[0] {
+            "do()" => (sum, true),
+            "don't()" => (sum, false),
+            _ => (
+                sum + enabled as i32
+                    * &capture[1].parse::<i32>().unwrap()
+                    * &capture[2].parse::<i32>().unwrap(),
+                enabled,
+            ),
+        });
+    println!("Sum3: {}", sum3);
 }
