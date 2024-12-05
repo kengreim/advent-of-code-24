@@ -1,3 +1,5 @@
+#![warn(clippy::all, clippy::pedantic, clippy::nursery)]
+
 use std::collections::HashMap;
 use std::fs;
 
@@ -9,40 +11,31 @@ fn main() {
 
     let rules = input
         .lines()
-        .filter(|l| l.contains("|"))
+        .filter(|l| l.contains('|'))
         .map(|l| {
-            let nums = l.split("|").collect::<Vec<&str>>();
+            let nums = l.split('|').collect::<Vec<&str>>();
             (nums[0], nums[1])
         })
         .collect::<Vec<_>>();
 
-    // let rules_map = input
-    //     .lines()
-    //     .filter(|l| l.contains("|"))
-    //     .map(|l| {
-    //         let nums = l.split("|").collect::<Vec<&str>>();
-    //         (nums[0], (nums[0], nums[1]))
-    //     })
-    //     .collect::<HashMap<_, _>>();
+    let mut rules_map: HashMap<&str, Vec<(&str, &str)>> = HashMap::new();
+    for line in input.lines().filter(|l| l.contains('|')) {
+        let nums = line.split('|').collect::<Vec<_>>();
+        rules_map
+            .entry(nums[0])
+            .and_modify(|list| list.push((nums[0], nums[1])))
+            .or_insert_with(|| vec![(nums[0], nums[1])]);
+    }
 
     let sequences = input
         .lines()
-        .filter(|l| l.contains(","))
+        .filter(|l| l.contains(','))
         .collect::<Vec<_>>();
 
     let mut safe = vec![];
     let mut unsafe_order = vec![];
     'outer: for sequence in sequences {
-        // let applicable_rules = sequence
-        //     .split(",")
-        //     .map(|n| rules_map.get(n))
-        //     .flatten()
-        //     .collect::<Vec<_>>();
-
-        //println!("Checking sequence: {:?}", sequence);
-        //println!("Applying rules: {:?}", applicable_rules);
-
-        for rule in rules.iter() {
+        for rule in &filter_rules(&rules_map, sequence) {
             if !is_safe(rule, sequence) {
                 unsafe_order.push(sequence);
                 continue 'outer;
@@ -62,44 +55,30 @@ fn main() {
     println!("{sum}");
 
     // PART 2
-
-    //println!("{}", unsafe_order.len());
     let mut fixed = vec![];
-    for sequence in unsafe_order.iter() {
+    for sequence in &unsafe_order {
         let mut sequence_vec = sequence.split(',').collect::<Vec<_>>();
         let mut safe = false;
         while !safe {
-            for rule in rules.iter() {
-                //println!("Before applying rule {} {}", rule.0, rule.1);
-                match (
+            for rule in &filter_rules(&rules_map, sequence) {
+                if let (Some(a), Some(b)) = (
                     sequence_vec.iter().position(|r| *r == rule.0),
                     sequence_vec.iter().position(|r| *r == rule.1),
                 ) {
-                    (Some(a), Some(b)) => {
-                        if a > b {
-                            //println!("{:?}", sequence_vec);
-                            let temp = sequence_vec[a];
-                            sequence_vec.remove(a);
-                            sequence_vec.insert(b, temp);
-
-                            //println!("After");
-                            //println!("{:?}", sequence_vec);
-                        }
+                    if a > b {
+                        sequence_vec.insert(b, sequence_vec[a]);
+                        sequence_vec.remove(a + 1);
                     }
-                    _ => (),
                 }
             }
 
             safe = rules
                 .iter()
-                .map(|r| is_safe(r, &sequence_vec.join(",").as_str()))
+                .map(|r| is_safe(r, sequence_vec.join(",").as_str()))
                 .all(|b| b);
-            //println!("Safe check: {safe}");
         }
         fixed.push(sequence_vec);
     }
-
-    //println!("{:?}", fixed);
 
     let sum2 = fixed
         .iter()
@@ -113,4 +92,15 @@ fn is_safe(rule: &(&str, &str), sequence: &str) -> bool {
         (Some(a), Some(b)) => a < b,
         _ => true,
     }
+}
+
+fn filter_rules<'a>(
+    rules_map: &'a HashMap<&str, Vec<(&'a str, &'a str)>>,
+    pair_str: &str,
+) -> Vec<&'a (&'a str, &'a str)> {
+    pair_str
+        .split(',')
+        .filter_map(|n| rules_map.get(n))
+        .flatten()
+        .collect::<Vec<_>>()
 }
