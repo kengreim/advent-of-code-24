@@ -35,7 +35,7 @@ fn main() {
     let mut safe = vec![];
     let mut unsafe_order = vec![];
     'outer: for sequence in sequences {
-        for rule in &filter_rules(&rules_map, sequence) {
+        for rule in filter_rules(&rules_map, sequence) {
             if !is_safe(rule, sequence) {
                 unsafe_order.push(sequence);
                 continue 'outer;
@@ -60,7 +60,7 @@ fn main() {
         let mut sequence_vec = sequence.split(',').collect::<Vec<_>>();
         let mut safe = false;
         while !safe {
-            for rule in &filter_rules(&rules_map, sequence) {
+            for rule in filter_rules(&rules_map, sequence) {
                 if let (Some(a), Some(b)) = (
                     sequence_vec.iter().position(|r| *r == rule.0),
                     sequence_vec.iter().position(|r| *r == rule.1),
@@ -96,11 +96,10 @@ fn is_safe(rule: &(&str, &str), sequence: &str) -> bool {
 
 fn filter_rules<'a>(
     rules_map: &'a HashMap<&str, Vec<(&'a str, &'a str)>>,
-    pair_str: &str,
-) -> Vec<&'a (&'a str, &'a str)> {
+    pair_str: &'a str,
+) -> impl Iterator<Item = &'a (&'a str, &'a str)> + use<'a> {
     pair_str
         .split(',')
         .filter_map(|n| rules_map.get(n))
         .flatten()
-        .collect::<Vec<_>>()
 }
