@@ -114,6 +114,7 @@ fn is_cyclical(
     false
 }
 
+#[warn(dead_code)]
 fn print_grid(grid: &Grid<char>) {
     for row in grid.iter_rows() {
         println!("{}", row.collect::<String>());
@@ -121,37 +122,23 @@ fn print_grid(grid: &Grid<char>) {
 }
 
 const fn step_forward(row: usize, col: usize, dir: Direction) -> (Option<usize>, Option<usize>) {
-    let new_row = match (row, &dir) {
-        (0, _) => None,
-        (_, Direction::Up) => Some(row - 1),
-        (_, Direction::Down) => Some(row + 1),
-        _ => Some(row),
-    };
-    let new_col = match (col, &dir) {
-        (0, _) => None,
-        (_, Direction::Left) => Some(col - 1),
-        (_, Direction::Right) => Some(col + 1),
-        _ => Some(col),
-    };
-    (new_row, new_col)
+    match (row, col, dir) {
+        (0, _, Direction::Up) | (_, 0, Direction::Left) => (None, None),
+        (r, c, Direction::Up) => (Some(r - 1), Some(c)),
+        (r, c, Direction::Down) => (Some(r + 1), Some(c)),
+        (r, c, Direction::Left) => (Some(r), Some(c - 1)),
+        (r, c, Direction::Right) => (Some(r), Some(c + 1)),
+    }
 }
 
 const fn dir_to_char(current: char, dir: Direction) -> char {
-    match dir {
-        Direction::Up | Direction::Down => {
-            if current == '-' {
-                '+'
-            } else {
-                '|'
-            }
-        }
-        Direction::Right | Direction::Left => {
-            if current == '|' {
-                '+'
-            } else {
-                '-'
-            }
-        }
+    match (dir, current) {
+        (Direction::Up, '-')
+        | (Direction::Down, '-')
+        | (Direction::Left, '|')
+        | (Direction::Right, '|') => '+',
+        (Direction::Up, _) | (Direction::Down, _) => '|',
+        (Direction::Left, _) | (Direction::Right, _) => '-',
     }
 }
 
