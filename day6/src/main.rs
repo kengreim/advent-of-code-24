@@ -67,16 +67,13 @@ fn part2(initial_pos: (usize, usize), grid: &Grid<char>) {
             match grid.get(r, c).unwrap() {
                 '#' | '^' | '.' => continue,
                 _ => {
-                    let modified = ModGrid {
-                        original: grid,
-                        replacement_pos: (r, c),
-                        replacement_char: 'O',
-                    };
+                    let mut modified_grid = grid.clone();
+                    *modified_grid.get_mut(r, c).unwrap() = 'O'; // Just for visual debugging, not needed
                     if is_cyclical(
                         (start_row, start_col),
                         Direction::Up,
                         HashSet::new(),
-                        modified,
+                        modified_grid,
                     ) {
                         obstacles.insert((r, c));
                     }
@@ -91,16 +88,16 @@ fn is_cyclical(
     current: (usize, usize),
     mut dir: Direction,
     mut visited: HashSet<(usize, usize, Direction)>,
-    grid: ModGrid,
+    mut grid: Grid<char>,
 ) -> bool {
     let (mut row, mut col) = current;
     let (mut previous_row, mut previous_col) = (row, col);
-    while let Some(c) = grid.get(row, col) {
-        if c == '#' || c == 'O' {
+    while let Some(c) = grid.get_mut(row, col) {
+        if *c == '#' || *c == 'O' {
             (row, col) = (previous_row, previous_col);
             dir = turn_right(dir);
         } else {
-            //*c = dir_to_char(c.to_owned(), dir); // Just for visual debugging, not needed
+            *c = dir_to_char(c.to_owned(), dir); // Just for visual debugging, not needed
             if visited.contains(&(row, col, dir)) {
                 return true;
             }
@@ -115,22 +112,6 @@ fn is_cyclical(
         }
     }
     false
-}
-
-struct ModGrid<'a> {
-    original: &'a Grid<char>,
-    replacement_pos: (usize, usize),
-    replacement_char: char,
-}
-
-impl ModGrid<'_> {
-    fn get(&self, row: usize, col: usize) -> Option<char> {
-        if row == self.replacement_pos.0 && col == self.replacement_pos.1 {
-            Some(self.replacement_char)
-        } else {
-            self.original.get(row, col).copied()
-        }
-    }
 }
 
 #[allow(dead_code)]
@@ -150,7 +131,6 @@ const fn step_forward(row: usize, col: usize, dir: Direction) -> (Option<usize>,
     }
 }
 
-#[allow(dead_code)]
 const fn dir_to_char(current: char, dir: Direction) -> char {
     match (dir, current) {
         (Direction::Up | Direction::Down, '-') | (Direction::Left | Direction::Right, '|') => '+',
