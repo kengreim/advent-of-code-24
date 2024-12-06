@@ -114,7 +114,7 @@ fn is_cyclical(
     false
 }
 
-#[warn(dead_code)]
+#[allow(dead_code)]
 fn print_grid(grid: &Grid<char>) {
     for row in grid.iter_rows() {
         println!("{}", row.collect::<String>());
@@ -133,12 +133,9 @@ const fn step_forward(row: usize, col: usize, dir: Direction) -> (Option<usize>,
 
 const fn dir_to_char(current: char, dir: Direction) -> char {
     match (dir, current) {
-        (Direction::Up, '-')
-        | (Direction::Down, '-')
-        | (Direction::Left, '|')
-        | (Direction::Right, '|') => '+',
-        (Direction::Up, _) | (Direction::Down, _) => '|',
-        (Direction::Left, _) | (Direction::Right, _) => '-',
+        (Direction::Up | Direction::Down, '-') | (Direction::Left | Direction::Right, '|') => '+',
+        (Direction::Up | Direction::Down, _) => '|',
+        (Direction::Left | Direction::Right, _) => '-',
     }
 }
 
