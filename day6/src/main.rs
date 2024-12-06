@@ -1,6 +1,7 @@
 #![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 
 use grid::Grid;
+use rayon::prelude::*;
 use std::collections::HashSet;
 use std::fs;
 use std::time::Instant;
@@ -17,7 +18,7 @@ fn main() {
     let (initial, visited) = part1();
 
     let start = Instant::now();
-    part2(initial, &visited);
+    part2_parallel(initial, &visited);
     println!("Finished part 2 after {:?}", start.elapsed());
 }
 
@@ -62,26 +63,59 @@ fn part1() -> ((usize, usize), Grid<char>) {
 fn part2(initial_pos: (usize, usize), grid: &Grid<char>) {
     let (start_row, start_col) = initial_pos;
     let mut obstacles: HashSet<(usize, usize)> = HashSet::new();
-    for r in 0..grid.rows() {
-        for c in 0..grid.cols() {
-            match grid.get(r, c).unwrap() {
-                '#' | '^' | '.' => continue,
-                _ => {
-                    let mut modified_grid = grid.clone();
-                    *modified_grid.get_mut(r, c).unwrap() = 'O'; // Just for visual debugging, not needed
-                    if is_cyclical(
-                        (start_row, start_col),
-                        Direction::Up,
-                        HashSet::new(),
-                        modified_grid,
-                    ) {
-                        obstacles.insert((r, c));
-                    }
+    for ((r, c), i) in grid.indexed_iter() {
+        match i {
+            '#' | '^' | '.' => continue,
+            _ => {
+                let mut modified_grid = grid.clone();
+                *modified_grid.get_mut(r, c).unwrap() = 'O'; // Just for visual debugging, not needed
+                if is_cyclical(
+                    (start_row, start_col),
+                    Direction::Up,
+                    HashSet::new(),
+                    modified_grid,
+                ) {
+                    obstacles.insert((r, c));
                 }
             }
         }
     }
     println!("{}", obstacles.len());
+}
+
+fn part2_parallel(initial_pos: (usize, usize), grid: &Grid<char>) {
+    let (start_row, start_col) = initial_pos;
+    let rows = (0..grid.rows()).collect::<Vec<_>>();
+    let cols = (0..grid.cols()).collect::<Vec<_>>();
+
+    let n = rows
+        .par_iter()
+        .map(|r| {
+            cols.par_iter()
+                .map(|c| {
+                    match grid.get(*r, *c).unwrap() {
+                        '#' | '^' | '.' => None,
+                        _ => {
+                            let mut modified_grid = grid.clone();
+                            *modified_grid.get_mut(*r, *c).unwrap() = 'O'; // Just for visual debugging, not needed
+                            if is_cyclical(
+                                (start_row, start_col),
+                                Direction::Up,
+                                HashSet::new(),
+                                modified_grid,
+                            ) {
+                                Some((*r, *c))
+                            } else {
+                                None
+                            }
+                        }
+                    }
+                })
+                .flatten()
+        })
+        .flatten()
+        .count();
+    println!("{}", n);
 }
 
 fn is_cyclical(
