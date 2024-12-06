@@ -85,33 +85,31 @@ fn part2(initial_pos: (usize, usize), grid: &Grid<char>) {
 
 fn part2_parallel(initial_pos: (usize, usize), grid: &Grid<char>) {
     let (start_row, start_col) = initial_pos;
-    let rows = (0..grid.rows()).collect::<Vec<_>>();
-    let cols = (0..grid.cols()).collect::<Vec<_>>();
+    let all_pos = (0..grid.rows())
+        .map(|r| (0..grid.cols()).map(move |c| (r, c)))
+        .flatten()
+        .collect::<Vec<_>>();
 
-    let n = rows
+    let n = all_pos
         .par_iter()
-        .map(|r| {
-            cols.par_iter()
-                .map(|c| {
-                    match grid.get(*r, *c).unwrap() {
-                        '#' | '^' | '.' => None,
-                        _ => {
-                            let mut modified_grid = grid.clone();
-                            *modified_grid.get_mut(*r, *c).unwrap() = 'O'; // Just for visual debugging, not needed
-                            if is_cyclical(
-                                (start_row, start_col),
-                                Direction::Up,
-                                HashSet::new(),
-                                modified_grid,
-                            ) {
-                                Some((*r, *c))
-                            } else {
-                                None
-                            }
-                        }
+        .map(|(r, c)| {
+            match grid.get(*r, *c).unwrap() {
+                '#' | '^' | '.' => None,
+                _ => {
+                    let mut modified_grid = grid.clone();
+                    *modified_grid.get_mut(*r, *c).unwrap() = 'O'; // Just for visual debugging, not needed
+                    if is_cyclical(
+                        (start_row, start_col),
+                        Direction::Up,
+                        HashSet::new(),
+                        modified_grid,
+                    ) {
+                        Some((*r, *c))
+                    } else {
+                        None
                     }
-                })
-                .flatten()
+                }
+            }
         })
         .flatten()
         .count();
