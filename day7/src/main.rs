@@ -59,7 +59,7 @@ fn part2_recursive() {
     let sum: i64 = input
         .lines()
         .map(parse_line)
-        .filter(|(total, seq)| can_be_valid(*total, &seq, seq.len() - 1))
+        .filter(|(total, seq)| can_be_valid(*total, seq, seq.len() - 1))
         .map(|(total, _)| total)
         .sum();
     println!("{sum}");
