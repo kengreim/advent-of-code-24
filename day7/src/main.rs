@@ -56,13 +56,12 @@ fn part2_recursive() {
 
     // Part 1
     let input = fs::read_to_string(PATH).unwrap();
-    let mut sum = 0;
-    for line in input.lines() {
-        let (total, seq) = parse_line(line);
-        if can_be_valid(total, &seq, seq.len() - 1) {
-            sum += total;
-        }
-    }
+    let sum: i64 = input
+        .lines()
+        .map(parse_line)
+        .filter(|(total, seq)| can_be_valid(*total, &seq, seq.len() - 1))
+        .map(|(total, _)| total)
+        .sum();
     println!("{sum}");
 }
 
@@ -110,7 +109,7 @@ fn can_be_valid(total: i64, seq: &[i64], idx: usize) -> bool {
         }
 
         if total % seq[idx] == 0 {
-            possibilties.push((&seq[0..idx], idx - 1, total / seq[idx]))
+            possibilties.push((&seq[0..idx], idx - 1, total / seq[idx]));
         }
 
         if total - seq[idx] > 0 {
