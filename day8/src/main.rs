@@ -1,6 +1,6 @@
 use grid::Grid;
 use itertools::Itertools;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::time::Instant;
 
@@ -14,33 +14,30 @@ fn antinode_checker(ignore_distance: bool) {
     const PATH: &str = "day8/src/day8_input.txt";
 
     let input = fs::read_to_string(PATH).unwrap();
-    let mut stations = input
-        .lines()
-        .flat_map(|l| l.chars())
-        .filter(|c| *c != '.')
-        .collect::<Vec<_>>();
-    stations.sort();
-    stations.dedup();
 
-    let num_cols = input.lines().map(|l| l.chars()).next().unwrap().count();
+    let num_cols = input.split_once("\n").unwrap().0.chars().count();
     let grid = Grid::from_vec(
         input.lines().flat_map(|l| l.chars()).collect::<Vec<_>>(),
         num_cols,
     );
 
-    let mut positions = HashSet::new();
+    let mut stations = HashMap::new();
+    grid.indexed_iter()
+        .filter(|((_, _), c)| **c != '.')
+        .for_each(|((r, c), char)| {
+            stations
+                .entry(char)
+                .and_modify(|stations: &mut Vec<(usize, usize)>| stations.push((r, c)))
+                .or_insert_with(|| vec![(r, c)]);
+        });
 
-    for s in stations {
-        let instances = grid
-            .indexed_iter()
-            .filter(|((_, _), c)| **c == s)
-            .map(|((row, col), _)| (row, col))
-            .collect::<Vec<_>>();
+    let mut antinodes = HashSet::new();
 
+    for (_, instances) in stations {
         let all_pairs = instances
             .clone()
             .into_iter()
-            .cartesian_product(instances.clone())
+            .cartesian_product(instances)
             .filter(|&(a, b)| a != b);
 
         for ((station1_r, station1_c), (station2_r, station2_c)) in all_pairs {
@@ -64,7 +61,7 @@ fn antinode_checker(ignore_distance: bool) {
                     ) {
                         //println!("{s}");
                         //println!("{:?}", (r, c));
-                        positions.insert((r, c));
+                        antinodes.insert((r, c));
                     }
                 }
 
@@ -73,19 +70,20 @@ fn antinode_checker(ignore_distance: bool) {
                     && ((station1_r as f32 - r as f32) / (station2_r as f32 - r as f32)
                         == (station1_c as f32 - c as f32) / (station2_c as f32 - c as f32))
                 {
-                    positions.insert((r, c));
+                    antinodes.insert((r, c));
                 }
             }
         }
     }
-    println!("sum = {}", positions.len());
+
     let mut grid2 = grid.clone();
-    for (r, c) in positions {
-        if let Some(c) = grid2.get_mut(r, c) {
+    for (r, c) in &antinodes {
+        if let Some(c) = grid2.get_mut(*r, *c) {
             *c = '#';
         }
     }
     print_grid(&grid2);
+    println!("sum = {}", antinodes.len());
 }
 
 fn is_double_distance(
@@ -110,8 +108,12 @@ fn create_distance_grid(station_pos: (usize, usize), original_grid: &Grid<char>)
     grid
 }
 
-fn print_grid(grid: &Grid<char>) {
+fn print_grid<T>(grid: &Grid<T>)
+where
+    T: std::fmt::Display,
+    String: for<'a> FromIterator<&'a T>,
+{
     for row in grid.iter_rows() {
-        println!("{:?}", row.collect::<String>());
+        println!("{}", row.collect::<String>());
     }
 }
