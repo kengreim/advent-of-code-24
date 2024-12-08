@@ -1,15 +1,18 @@
+#![warn(clippy::all, clippy::pedantic, clippy::nursery)]
+
 use grid::Grid;
 
-pub fn taxicab_distance<T>(grid: Grid<T>, p1: (usize, usize), p2: (usize, usize)) -> Option<usize> {
-    let rows_range = 0..grid.rows();
-    let cols_range = 0..grid.cols();
+#[must_use]
+pub fn taxicab_distance<T>(
+    grid: &Grid<T>,
+    p1: (impl TryInto<usize>, impl TryInto<usize>),
+    p2: (impl TryInto<usize>, impl TryInto<usize>),
+) -> Option<usize> {
+    let (p1_r, p1_c): (usize, usize) = (p1.0.try_into().ok()?, p1.1.try_into().ok()?);
+    let (p2_r, p2_c): (usize, usize) = (p2.0.try_into().ok()?, p2.1.try_into().ok()?);
 
-    if rows_range.contains(&p1.0)
-        && rows_range.contains(&p2.0)
-        && cols_range.contains(&p1.1)
-        && cols_range.contains(&p2.1)
-    {
-        Some(p1.0.abs_diff(p2.0) + p1.1.abs_diff(p2.1))
+    if p1_r < grid.rows() && p2_r < grid.rows() && p1_c < grid.cols() && p2_c < grid.cols() {
+        Some(p1_r.abs_diff(p2_r) + p1_c.abs_diff(p2_c))
     } else {
         None
     }

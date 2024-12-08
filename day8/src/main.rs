@@ -1,3 +1,5 @@
+#![warn(clippy::all, clippy::pedantic, clippy::nursery)]
+
 use grid::Grid;
 use itertools::Itertools;
 use std::collections::{HashMap, HashSet};
