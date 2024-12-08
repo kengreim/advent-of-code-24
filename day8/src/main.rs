@@ -48,17 +48,11 @@ fn part1() {
                 if station1_distance_grid[(r, c)] as f32 / station2_distance_grid[(r, c)] as f32
                     == 2.0
                 {
-                    let (closer_row, closer_col) =
+                    let (closer_row, closer_col, farther_row, farther_col) =
                         if station1_distance_grid[(r, c)] < station2_distance_grid[(r, c)] {
-                            station1
+                            (station1.0, station1.1, station2.0, station2.1)
                         } else {
-                            station2
-                        };
-                    let (farther_row, farther_col) =
-                        if station1_distance_grid[(r, c)] < station2_distance_grid[(r, c)] {
-                            station2
-                        } else {
-                            station1
+                            (station2.0, station2.1, station1.0, station1.1)
                         };
 
                     if (farther_row as f32 - r as f32) / (closer_row as f32 - r as f32) == 2.0
