@@ -6,7 +6,7 @@ use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::time::Instant;
 use utils;
-use utils::parse_grid;
+use utils::{filtered_grid, parse_grid};
 
 fn main() {
     let start = Instant::now();
@@ -21,14 +21,12 @@ fn antinode_checker(ignore_distance: bool) {
     let grid = parse_grid(&input, |l| l.chars().collect::<Vec<_>>()).expect("Invalid input");
 
     let mut stations = HashMap::new();
-    grid.indexed_iter()
-        .filter(|((_, _), c)| **c != '.')
-        .for_each(|((r, c), char)| {
-            stations
-                .entry(char)
-                .and_modify(|stations: &mut Vec<(usize, usize)>| stations.push((r, c)))
-                .or_insert_with(|| vec![(r, c)]);
-        });
+    filtered_grid(&grid, |c| *c != '.').for_each(|((r, c), char)| {
+        stations
+            .entry(char)
+            .and_modify(|stations: &mut Vec<(usize, usize)>| stations.push((r, c)))
+            .or_insert_with(|| vec![(r, c)]);
+    });
 
     let mut antinodes = HashSet::new();
 

@@ -25,3 +25,11 @@ pub fn parse_grid<T>(input: &str, split_fn: impl Fn(&str) -> Vec<T>) -> Option<G
         num_cols,
     ))
 }
+
+pub fn filtered_grid<T>(
+    grid: &Grid<T>,
+    filter_fn: impl Fn(&T) -> bool,
+) -> impl Iterator<Item = ((usize, usize), &T)> {
+    grid.indexed_iter()
+        .filter(move |((_, _), val)| filter_fn(*val))
+}
