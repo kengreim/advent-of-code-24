@@ -49,12 +49,11 @@ fn antinode_checker(ignore_distance: bool) {
                     == 2.0
                     && !ignore_distance
                 {
-                    if ((station1_r as f32 - r as f32) / (station2_r as f32 - r as f32) == 2.0
-                        && (station1_c as f32 - c as f32) / (station2_c as f32 - c as f32) == 2.0)
-                        || ((station1_r as f32 - r as f32) / (station2_r as f32 - r as f32) == 0.5
-                            && (station1_c as f32 - c as f32) / (station2_c as f32 - c as f32)
-                                == 0.5)
-                    {
+                    if is_double_distance(
+                        (r, c),
+                        (station1_r, station1_c),
+                        (station2_r, station2_c),
+                    ) {
                         //println!("{s}");
                         //println!("{:?}", (r, c));
                         positions.insert((r, c));
@@ -80,6 +79,20 @@ fn antinode_checker(ignore_distance: bool) {
         }
     }
     print_grid(&grid2);
+}
+
+fn is_double_distance(
+    point: (usize, usize),
+    station1: (usize, usize),
+    station2: (usize, usize),
+) -> bool {
+    let (r, c) = point;
+    let (station1_r, station1_c) = station1;
+    let (station2_r, station2_c) = station2;
+    ((station1_r as f32 - r as f32) / (station2_r as f32 - r as f32) == 2.0
+        && (station1_c as f32 - c as f32) / (station2_c as f32 - c as f32) == 2.0)
+        || ((station1_r as f32 - r as f32) / (station2_r as f32 - r as f32) == 0.5
+            && (station1_c as f32 - c as f32) / (station2_c as f32 - c as f32) == 0.5)
 }
 
 fn create_distance_grid(station_pos: (usize, usize), original_grid: &Grid<char>) -> Grid<usize> {
