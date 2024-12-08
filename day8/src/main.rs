@@ -44,6 +44,10 @@ fn antinode_checker(ignore_distance: bool) {
             let station1_distance_grid = create_distance_grid((station1_r, station1_c), &grid);
             let station2_distance_grid = create_distance_grid((station2_r, station2_c), &grid);
             for ((r, c), _) in grid.indexed_iter() {
+                if positions.contains(&(r, c)) {
+                    continue;
+                }
+
                 // Part 1 logic
                 if station1_distance_grid[(r, c)] as f32 / station2_distance_grid[(r, c)] as f32
                     == 2.0
