@@ -4,13 +4,12 @@ use std::collections::HashSet;
 use std::fs;
 
 fn main() {
-    part1();
+    antinode_checker(true)
 }
 
-fn part1() {
+fn antinode_checker(ignore_distance: bool) {
     const PATH: &str = "day8/src/day8_input.txt";
 
-    // Part 1
     let input = fs::read_to_string(PATH).unwrap();
     let mut stations = input
         .lines()
@@ -45,8 +44,10 @@ fn part1() {
             let station1_distance_grid = create_distance_grid(station1, &grid);
             let station2_distance_grid = create_distance_grid(station2, &grid);
             for ((r, c), _) in grid.indexed_iter() {
+                // Part 1 logic
                 if station1_distance_grid[(r, c)] as f32 / station2_distance_grid[(r, c)] as f32
                     == 2.0
+                    && !ignore_distance
                 {
                     let (closer_row, closer_col, farther_row, farther_col) =
                         if station1_distance_grid[(r, c)] < station2_distance_grid[(r, c)] {
@@ -63,10 +64,26 @@ fn part1() {
                         positions.insert((r, c));
                     }
                 }
+
+                // Part 2 logic
+                if ignore_distance {
+                    if (station1.0 as f32 - r as f32) / (station2.0 as f32 - r as f32)
+                        == (station1.1 as f32 - c as f32) / (station2.1 as f32 - c as f32)
+                    {
+                        positions.insert((r, c));
+                    }
+                }
             }
         }
     }
     println!("sum = {}", positions.iter().count());
+    let mut grid2 = grid.clone();
+    for (r, c) in positions {
+        if let Some(c) = grid2.get_mut(r, c) {
+            *c = '#';
+        }
+    }
+    print_grid(&grid2);
 }
 
 fn create_distance_grid(station_pos: (usize, usize), original_grid: &Grid<char>) -> Grid<usize> {
@@ -77,8 +94,8 @@ fn create_distance_grid(station_pos: (usize, usize), original_grid: &Grid<char>)
     grid
 }
 
-fn print_grid(grid: &Grid<usize>) {
+fn print_grid(grid: &Grid<char>) {
     for row in grid.iter_rows() {
-        println!("{:?}", row.collect::<Vec<_>>());
+        println!("{:?}", row.collect::<String>());
     }
 }
