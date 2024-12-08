@@ -4,7 +4,7 @@ use std::collections::HashSet;
 use std::fs;
 
 fn main() {
-    antinode_checker(false)
+    antinode_checker(true)
 }
 
 fn antinode_checker(ignore_distance: bool) {
@@ -61,17 +61,16 @@ fn antinode_checker(ignore_distance: bool) {
                 }
 
                 // Part 2 logic
-                if ignore_distance {
-                    if (station1_r as f32 - r as f32) / (station2_r as f32 - r as f32)
-                        == (station1_c as f32 - c as f32) / (station2_c as f32 - c as f32)
-                    {
-                        positions.insert((r, c));
-                    }
+                if ignore_distance
+                    && ((station1_r as f32 - r as f32) / (station2_r as f32 - r as f32)
+                        == (station1_c as f32 - c as f32) / (station2_c as f32 - c as f32))
+                {
+                    positions.insert((r, c));
                 }
             }
         }
     }
-    println!("sum = {}", positions.iter().count());
+    println!("sum = {}", positions.len());
     let mut grid2 = grid.clone();
     for (r, c) in positions {
         if let Some(c) = grid2.get_mut(r, c) {
