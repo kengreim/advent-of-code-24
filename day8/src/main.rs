@@ -4,7 +4,7 @@ use std::collections::HashSet;
 use std::fs;
 
 fn main() {
-    antinode_checker(true)
+    antinode_checker(false)
 }
 
 fn antinode_checker(ignore_distance: bool) {
@@ -40,24 +40,20 @@ fn antinode_checker(ignore_distance: bool) {
             .cartesian_product(instances.clone())
             .filter(|&(a, b)| a != b);
 
-        for (station1, station2) in all_pairs {
-            let station1_distance_grid = create_distance_grid(station1, &grid);
-            let station2_distance_grid = create_distance_grid(station2, &grid);
+        for ((station1_r, station1_c), (station2_r, station2_c)) in all_pairs {
+            let station1_distance_grid = create_distance_grid((station1_r, station1_c), &grid);
+            let station2_distance_grid = create_distance_grid((station2_r, station2_c), &grid);
             for ((r, c), _) in grid.indexed_iter() {
                 // Part 1 logic
                 if station1_distance_grid[(r, c)] as f32 / station2_distance_grid[(r, c)] as f32
                     == 2.0
                     && !ignore_distance
                 {
-                    let (closer_row, closer_col, farther_row, farther_col) =
-                        if station1_distance_grid[(r, c)] < station2_distance_grid[(r, c)] {
-                            (station1.0, station1.1, station2.0, station2.1)
-                        } else {
-                            (station2.0, station2.1, station1.0, station1.1)
-                        };
-
-                    if (farther_row as f32 - r as f32) / (closer_row as f32 - r as f32) == 2.0
-                        && (farther_col as f32 - c as f32) / (closer_col as f32 - c as f32) == 2.0
+                    if ((station1_r as f32 - r as f32) / (station2_r as f32 - r as f32) == 2.0
+                        && (station1_c as f32 - c as f32) / (station2_c as f32 - c as f32) == 2.0)
+                        || ((station1_r as f32 - r as f32) / (station2_r as f32 - r as f32) == 0.5
+                            && (station1_c as f32 - c as f32) / (station2_c as f32 - c as f32)
+                                == 0.5)
                     {
                         //println!("{s}");
                         //println!("{:?}", (r, c));
@@ -67,8 +63,8 @@ fn antinode_checker(ignore_distance: bool) {
 
                 // Part 2 logic
                 if ignore_distance {
-                    if (station1.0 as f32 - r as f32) / (station2.0 as f32 - r as f32)
-                        == (station1.1 as f32 - c as f32) / (station2.1 as f32 - c as f32)
+                    if (station1_r as f32 - r as f32) / (station2_r as f32 - r as f32)
+                        == (station1_c as f32 - c as f32) / (station2_c as f32 - c as f32)
                     {
                         positions.insert((r, c));
                     }
