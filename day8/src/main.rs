@@ -3,6 +3,8 @@ use itertools::Itertools;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::time::Instant;
+use utils;
+use utils::parse_grid;
 
 fn main() {
     let start = Instant::now();
@@ -14,12 +16,7 @@ fn antinode_checker(ignore_distance: bool) {
     const PATH: &str = "day8/src/day8_input.txt";
 
     let input = fs::read_to_string(PATH).unwrap();
-
-    let num_cols = input.split_once("\n").unwrap().0.chars().count();
-    let grid = Grid::from_vec(
-        input.lines().flat_map(|l| l.chars()).collect::<Vec<_>>(),
-        num_cols,
-    );
+    let grid = parse_grid(&input, |l| l.chars().collect::<Vec<_>>()).expect("Invalid input");
 
     let mut stations = HashMap::new();
     grid.indexed_iter()
