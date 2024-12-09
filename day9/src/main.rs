@@ -9,7 +9,7 @@ use std::time::Instant;
 
 fn main() {
     let start = Instant::now();
-    part1();
+    part2();
     println!("Elapsed time: {:.2?}", start.elapsed());
 }
 
@@ -75,11 +75,61 @@ fn part1() {
 }
 
 fn part2() {
-    const PATH: &str = "day9/src/day9_input.txt";
+    const PATH: &str = "day9/src/day9_example_simple.txt";
     let (mut disk_expanded, mut first_free_idx, mut last_file_idx) = parse_disk(PATH);
 
     let mut free_blocks = HashSet::<(usize, Sector)>::new();
-    while first_free_idx < last_file_idx {}
+    while first_free_idx < last_file_idx {
+        let mut avail_free = if let Free(n) = disk_expanded[first_free_idx].clone() {
+            n
+        } else {
+            panic!()
+        };
+
+        let (file_id, file_size) = if let File(id, size) = disk_expanded[last_file_idx].clone() {
+            (id, size)
+        } else {
+            panic!()
+        };
+
+        if file_id == 0 {
+            break;
+        }
+
+        while avail_free < file_size {
+            for i in first_free_idx..disk_expanded.len() {
+                if let Free(n) = disk_expanded[i] {
+                    first_free_idx = i;
+                    avail_free = n;
+                    break;
+                }
+            }
+        }
+
+        if avail_free == file_size {
+            *disk_expanded.get_mut(last_file_idx).unwrap() = Free(file_size);
+            *disk_expanded.get_mut(first_free_idx).unwrap() = File(file_id, file_size);
+        } else if avail_free >= file_size {
+            disk_expanded.insert(first_free_idx, File(file_id, file_size));
+            *disk_expanded.get_mut(first_free_idx + 1).unwrap() = Free(avail_free - file_size);
+            disk_expanded.push(Free(avail_free));
+        }
+
+        for i in (0..last_file_idx).rev() {
+            if let File(_, _) = disk_expanded[i] {
+                last_file_idx = i;
+                break;
+            }
+        }
+
+        for i in 0..disk_expanded.len() {
+            if let Free(_) = disk_expanded[i] {
+                first_free_idx = i;
+                break;
+            }
+        }
+        print_disk_string(&disk_expanded);
+    }
     println!("{}", checksum(&disk_expanded))
 }
 
