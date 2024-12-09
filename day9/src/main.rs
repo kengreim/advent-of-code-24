@@ -1,6 +1,7 @@
 #![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 
 use crate::Sector::{File, Free};
+use std::cmp::Ordering;
 use std::fmt::Display;
 use std::fs;
 use std::time::Instant;
@@ -65,7 +66,7 @@ fn part1() {
         }
     }
 
-    println!("{}", checksum(&disk_expanded, true))
+    println!("{}", checksum_p1(&disk_expanded));
 }
 
 fn part2() {
@@ -78,14 +79,18 @@ fn part2() {
         if let Some((found_free_idx, found_free_size)) =
             find_first_free_with(&disk_expanded, |s| s >= file_size, last_file_idx)
         {
-            if found_free_size == file_size {
-                *disk_expanded.get_mut(last_file_idx).unwrap() = Free(file_size);
-                *disk_expanded.get_mut(found_free_idx).unwrap() = File(file_id, file_size);
-            } else if found_free_size > file_size {
-                *disk_expanded.get_mut(last_file_idx).unwrap() = Free(file_size);
-                disk_expanded.insert(found_free_idx, File(file_id, file_size));
-                *disk_expanded.get_mut(found_free_idx + 1).unwrap() =
-                    Free(found_free_size - file_size);
+            match found_free_size.cmp(&file_size) {
+                Ordering::Equal => {
+                    *disk_expanded.get_mut(last_file_idx).unwrap() = Free(file_size);
+                    *disk_expanded.get_mut(found_free_idx).unwrap() = File(file_id, file_size);
+                }
+                Ordering::Greater => {
+                    *disk_expanded.get_mut(last_file_idx).unwrap() = Free(file_size);
+                    disk_expanded.insert(found_free_idx, File(file_id, file_size));
+                    *disk_expanded.get_mut(found_free_idx + 1).unwrap() =
+                        Free(found_free_size - file_size);
+                }
+                Ordering::Less => {}
             }
 
             //print_disk_string(&disk_expanded);
@@ -99,7 +104,7 @@ fn part2() {
             }
         }
     }
-    println!("{}", checksum(&disk_expanded, false));
+    println!("{}", checksum_p2(&disk_expanded));
 }
 
 fn find_first_free_with(
@@ -109,9 +114,8 @@ fn find_first_free_with(
 ) -> Option<(usize, Size)> {
     for (idx, item) in sectors.iter().enumerate() {
         if idx >= max_index {
-            break;
-        }
-        if let Free(size) = item {
+            return None;
+        } else if let Free(size) = item {
             if func(*size) {
                 return Some((idx, *size));
             }
@@ -172,8 +176,16 @@ fn checksum(sectors: &[Sector], break_on_first_free: bool) -> u64 {
     checksum
 }
 
+fn checksum_p1(sectors: &[Sector]) -> u64 {
+    checksum(sectors, true)
+}
+
+fn checksum_p2(sectors: &[Sector]) -> u64 {
+    checksum(sectors, false)
+}
+
 fn print_disk_string(sectors: &[Sector]) {
-    let full_str = sectors.iter().map(|s| s.to_string()).collect::<String>();
+    let full_str = sectors.iter().map(ToString::to_string).collect::<String>();
     println!("{full_str}");
 }
 
