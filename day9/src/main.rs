@@ -1,6 +1,7 @@
 #![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 
 use crate::Sector::{File, Free};
+use std::collections::HashSet;
 use std::fmt::Display;
 use std::fs;
 use std::iter::repeat;
@@ -28,33 +29,31 @@ fn part1() {
     //print_disk_string(&disk_expanded);
 
     while first_free_idx < last_file_idx {
-        let cloned = disk_expanded.clone();
-        let avail_free = if let Free(n) = &cloned[first_free_idx] {
+        let avail_free = if let Free(n) = disk_expanded[first_free_idx].clone() {
             n
         } else {
             panic!()
         };
 
-        let (file_id, file_size) = if let File(id, size) = &cloned[last_file_idx] {
+        let (file_id, file_size) = if let File(id, size) = disk_expanded[last_file_idx].clone() {
             (id, size)
         } else {
             panic!()
         };
 
         if avail_free >= file_size {
-            *disk_expanded.get_mut(last_file_idx).unwrap() = Free(*file_size);
+            *disk_expanded.get_mut(last_file_idx).unwrap() = Free(file_size);
 
             if avail_free == file_size {
-                *disk_expanded.get_mut(first_free_idx).unwrap() = File(*file_id, *file_size);
+                *disk_expanded.get_mut(first_free_idx).unwrap() = File(file_id, file_size);
             } else {
-                disk_expanded.insert(first_free_idx, File(*file_id, *file_size));
+                disk_expanded.insert(first_free_idx, File(file_id, file_size));
                 *disk_expanded.get_mut(first_free_idx + 1).unwrap() = Free(avail_free - file_size);
             }
         } else {
-            *disk_expanded.get_mut(first_free_idx).unwrap() = File(*file_id, *avail_free);
-            *disk_expanded.get_mut(last_file_idx).unwrap() =
-                File(*file_id, *file_size - avail_free);
-            disk_expanded.push(Free(*avail_free));
+            *disk_expanded.get_mut(first_free_idx).unwrap() = File(file_id, avail_free);
+            *disk_expanded.get_mut(last_file_idx).unwrap() = File(file_id, file_size - avail_free);
+            disk_expanded.push(Free(avail_free));
         }
 
         for i in first_free_idx..disk_expanded.len() {
@@ -79,6 +78,8 @@ fn part2() {
     const PATH: &str = "day9/src/day9_input.txt";
     let (mut disk_expanded, mut first_free_idx, mut last_file_idx) = parse_disk(PATH);
 
+    let mut free_blocks = HashSet::<(usize, Sector)>::new();
+    while first_free_idx < last_file_idx {}
     println!("{}", checksum(&disk_expanded))
 }
 
