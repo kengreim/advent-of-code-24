@@ -4,9 +4,12 @@ use crate::Sector::{File, Free};
 use std::fmt::Display;
 use std::fs;
 use std::iter::repeat;
+use std::time::Instant;
 
 fn main() {
+    let start = Instant::now();
     part1();
+    println!("Elapsed time: {:.2?}", start.elapsed());
 }
 
 type Id = i32;
@@ -20,38 +23,7 @@ enum Sector {
 
 fn part1() {
     const PATH: &str = "day9/src/day9_input.txt";
-    let disk_map = fs::read_to_string(PATH).unwrap();
-
-    let mut disk_expanded: Vec<Sector> = vec![];
-
-    let mut id = 0;
-    for (i, c) in disk_map.chars().filter(|c| !c.is_whitespace()).enumerate() {
-        if i % 2 == 0 {
-            disk_expanded.push(Sector::File(id, c.to_digit(10).unwrap() as u8));
-            id += 1;
-        } else {
-            disk_expanded.push(Sector::Free(c.to_digit(10).unwrap() as u8));
-        }
-    }
-
-    let mut first_free_idx = disk_expanded
-        .iter()
-        .enumerate()
-        .find_map(|(i, s)| match (i, s) {
-            (i, Free(n)) if *n > 0u8 => Some(i),
-            _ => None,
-        })
-        .unwrap();
-
-    let mut last_file_idx = disk_expanded
-        .iter()
-        .enumerate()
-        .rev()
-        .find_map(|(i, s)| match (i, s) {
-            (i, File(_, _)) => Some(i),
-            _ => None,
-        })
-        .unwrap();
+    let (mut disk_expanded, mut first_free_idx, mut last_file_idx) = parse_disk(PATH);
 
     //print_disk_string(&disk_expanded);
 
@@ -98,13 +70,50 @@ fn part1() {
                 break;
             }
         }
-        //print_disk_string(&disk_expanded);
     }
-    //print_disk_string(&disk_expanded);
 
+    println!("{}", checksum(&disk_expanded))
+}
+
+fn part2() {
+    const PATH: &str = "day9/src/day9_input.txt";
+    let (mut disk_expanded, mut first_free_idx, mut last_file_idx) = parse_disk(PATH);
+
+    println!("{}", checksum(&disk_expanded))
+}
+
+fn parse_disk(path: &str) -> (Vec<Sector>, usize, usize) {
+    let disk_map = fs::read_to_string(path).unwrap();
+
+    let mut disk_expanded: Vec<Sector> = vec![];
+    let mut first_free_idx = None;
+    let mut last_file_idx = None;
+
+    let mut id = 0;
+    for (i, c) in disk_map.chars().filter(|c| !c.is_whitespace()).enumerate() {
+        if i % 2 == 0 {
+            disk_expanded.push(File(id, c.to_digit(10).unwrap() as u8));
+            id += 1;
+            last_file_idx = Some(i);
+        } else {
+            disk_expanded.push(Free(c.to_digit(10).unwrap() as u8));
+            if first_free_idx.is_none() {
+                first_free_idx = Some(i);
+            }
+        }
+    }
+
+    (
+        disk_expanded,
+        first_free_idx.unwrap(),
+        last_file_idx.unwrap(),
+    )
+}
+
+fn checksum(sectors: &[Sector]) -> u64 {
     let mut checksum: u64 = 0;
     let mut block_count: u64 = 0;
-    for sector in disk_expanded.iter() {
+    for sector in sectors {
         if let File(id, size) = sector {
             for _ in 0u8..*size {
                 checksum += block_count * (*id as u64);
@@ -114,7 +123,7 @@ fn part1() {
             break;
         }
     }
-    println!("{checksum}")
+    checksum
 }
 
 fn print_disk_string(sectors: &[Sector]) {
