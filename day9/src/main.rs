@@ -1,10 +1,8 @@
 #![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 
 use crate::Sector::{File, Free};
-use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 use std::fs;
-use std::iter::repeat;
 use std::time::Instant;
 
 fn main() {
@@ -30,12 +28,11 @@ fn part1() {
     //print_disk_string(&disk_expanded);
 
     while first_free_idx < last_file_idx {
-        let (avail_free, file_id, file_size) = match (
+        let (Free(avail_free), File(file_id, file_size)) = (
             disk_expanded[first_free_idx].clone(),
             disk_expanded[last_file_idx].clone(),
-        ) {
-            (Free(n), File(id, size)) => (n, id, size),
-            _ => panic!(),
+        ) else {
+            panic!()
         };
 
         if avail_free >= file_size {
@@ -76,42 +73,19 @@ fn part2() {
     let (mut disk_expanded, (_, _), (mut last_file_idx, mut file_id, mut file_size)) =
         parse_disk(PATH).unwrap();
 
-    let mut free_blocks = HashMap::new();
-
     // One try for each file_id, all the way down to 0
     while file_id > 0 {
-        if let Some((found_free_idx, found_free_size, free_blocks_updated)) = find_first_free_with(
-            &disk_expanded,
-            free_blocks.clone(),
-            |s| s >= file_size,
-            last_file_idx,
-        ) {
-            free_blocks = free_blocks_updated;
-
+        if let Some((found_free_idx, found_free_size)) =
+            find_first_free_with(&disk_expanded, |s| s >= file_size, last_file_idx)
+        {
             if found_free_size == file_size {
                 *disk_expanded.get_mut(last_file_idx).unwrap() = Free(file_size);
                 *disk_expanded.get_mut(found_free_idx).unwrap() = File(file_id, file_size);
-
-                // If we only made a swap, tracked free indices don't change. Just remove previously tracked free
-                free_blocks.remove(&found_free_idx);
             } else if found_free_size > file_size {
                 *disk_expanded.get_mut(last_file_idx).unwrap() = Free(file_size);
                 disk_expanded.insert(found_free_idx, File(file_id, file_size));
                 *disk_expanded.get_mut(found_free_idx + 1).unwrap() =
                     Free(found_free_size - file_size);
-
-                // We need to adjust all tracked free indices that are beyond found index, starting with the highest
-                let mut keys = free_blocks.keys().cloned().collect::<Vec<_>>();
-                keys.sort_unstable();
-                for key_idx in keys.iter().rev() {
-                    if *key_idx > found_free_idx {
-                        let tmp = free_blocks.get(key_idx).unwrap();
-                        free_blocks.insert(key_idx + 1, *tmp);
-                        free_blocks.remove(&key_idx);
-                    } else {
-                        break;
-                    }
-                }
             }
 
             //print_disk_string(&disk_expanded);
@@ -125,36 +99,21 @@ fn part2() {
             }
         }
     }
-    println!("{}", checksum(&disk_expanded, false))
+    println!("{}", checksum(&disk_expanded, false));
 }
 
 fn find_first_free_with(
     sectors: &[Sector],
-    mut try_first_map: HashMap<usize, Size>,
     func: impl Fn(Size) -> bool,
     max_index: usize,
-) -> Option<(usize, Size, HashMap<usize, Size>)> {
-    let mut last_try_idx = 0;
-    let mut sorted_keys = try_first_map.keys().cloned().collect::<Vec<_>>();
-    sorted_keys.sort_unstable();
-
-    for key_idx in sorted_keys {
-        let try_size = try_first_map.get(&key_idx).unwrap();
-        last_try_idx = key_idx;
-        if key_idx < max_index && func(*try_size) {
-            return Some((key_idx, *try_size, try_first_map));
-        }
-    }
-
-    for idx in last_try_idx + 1..sectors.len() {
+) -> Option<(usize, Size)> {
+    for (idx, item) in sectors.iter().enumerate() {
         if idx >= max_index {
             break;
         }
-        if let Free(size) = sectors[idx] {
-            if func(size) {
-                return Some((idx, size, try_first_map));
-            } else {
-                try_first_map.insert(idx, size);
+        if let Free(size) = item {
+            if func(*size) {
+                return Some((idx, *size));
             }
         }
     }
@@ -207,7 +166,7 @@ fn checksum(sectors: &[Sector], break_on_first_free: bool) -> u64 {
             if break_on_first_free {
                 break;
             }
-            block_count += *size as u64;
+            block_count += u64::from(*size);
         }
     }
     checksum
@@ -215,27 +174,17 @@ fn checksum(sectors: &[Sector], break_on_first_free: bool) -> u64 {
 
 fn print_disk_string(sectors: &[Sector]) {
     let full_str = sectors.iter().map(|s| s.to_string()).collect::<String>();
-    println!("{}", full_str);
+    println!("{full_str}");
 }
 
 impl Display for Sector {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             Free(size) => {
-                write!(
-                    f,
-                    "{}",
-                    repeat('.').take(*size as usize).collect::<String>()
-                )
+                write!(f, "{}", ".".repeat(*size as usize))
             }
             File(id, size) => {
-                write!(
-                    f,
-                    "{}",
-                    repeat(id.to_string())
-                        .take(*size as usize)
-                        .collect::<String>()
-                )
+                write!(f, "{}", id.to_string().repeat(*size as usize))
             }
         }
     }
