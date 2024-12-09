@@ -5,8 +5,7 @@ use itertools::Itertools;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::time::Instant;
-use utils;
-use utils::{filtered_grid, parse_grid};
+use utils::GridExt;
 
 fn main() {
     let start = Instant::now();
@@ -18,15 +17,17 @@ fn antinode_checker(ignore_distance: bool) {
     const PATH: &str = "day8/src/day8_input.txt";
 
     let input = fs::read_to_string(PATH).unwrap();
-    let grid = parse_grid(&input, |l| l.chars().collect::<Vec<_>>()).expect("Invalid input");
 
+    let grid =
+        Grid::parse_from_str(&input, |l| l.chars().collect::<Vec<_>>()).expect("Invalid input");
     let mut stations = HashMap::new();
-    filtered_grid(&grid, |c| *c != '.').for_each(|((r, c), char)| {
-        stations
-            .entry(char)
-            .and_modify(|stations: &mut Vec<(usize, usize)>| stations.push((r, c)))
-            .or_insert_with(|| vec![(r, c)]);
-    });
+    grid.filtered_indexed_iter(|c| *c != '.')
+        .for_each(|((r, c), char)| {
+            stations
+                .entry(char)
+                .and_modify(|stations: &mut Vec<(usize, usize)>| stations.push((r, c)))
+                .or_insert_with(|| vec![(r, c)]);
+        });
 
     let mut antinodes = HashSet::new();
 

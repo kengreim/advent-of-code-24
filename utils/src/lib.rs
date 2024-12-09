@@ -2,6 +2,40 @@
 
 use grid::Grid;
 
+pub trait GridExt<T> {
+    fn filtered_indexed_iter<'a>(
+        &'a self,
+        filter_fn: impl Fn(&T) -> bool,
+    ) -> impl Iterator<Item = ((usize, usize), &'a T)>
+    where
+        T: 'a;
+
+    fn parse_from_str(input: &str, split_fn: impl Fn(&str) -> Vec<T>) -> Option<Self>
+    where
+        Self: Sized;
+}
+
+impl<T> GridExt<T> for Grid<T> {
+    fn filtered_indexed_iter<'a>(
+        &'a self,
+        filter_fn: impl Fn(&T) -> bool,
+    ) -> impl Iterator<Item = ((usize, usize), &'a T)>
+    where
+        T: 'a,
+    {
+        self.indexed_iter()
+            .filter(move |((_, _), val)| filter_fn(*val))
+    }
+
+    fn parse_from_str(input: &str, split_fn: impl Fn(&str) -> Vec<T>) -> Option<Grid<T>> {
+        let num_cols = split_fn(input.split_once('\n')?.0).len();
+        Some(Grid::from_vec(
+            input.lines().flat_map(split_fn).collect::<Vec<T>>(),
+            num_cols,
+        ))
+    }
+}
+
 #[must_use]
 pub fn taxicab_distance<T>(
     grid: &Grid<T>,
@@ -16,20 +50,4 @@ pub fn taxicab_distance<T>(
     } else {
         None
     }
-}
-
-pub fn parse_grid<T>(input: &str, split_fn: impl Fn(&str) -> Vec<T>) -> Option<Grid<T>> {
-    let num_cols = split_fn(input.split_once('\n')?.0).len();
-    Some(Grid::from_vec(
-        input.lines().flat_map(split_fn).collect::<Vec<T>>(),
-        num_cols,
-    ))
-}
-
-pub fn filtered_grid<T>(
-    grid: &Grid<T>,
-    filter_fn: impl Fn(&T) -> bool,
-) -> impl Iterator<Item = ((usize, usize), &T)> {
-    grid.indexed_iter()
-        .filter(move |((_, _), val)| filter_fn(*val))
 }
