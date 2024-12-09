@@ -100,22 +100,20 @@ fn part1() {
         }
         //print_disk_string(&disk_expanded);
     }
-    print_disk_string(&disk_expanded);
+    //print_disk_string(&disk_expanded);
 
-    let checksum: u64 = disk_expanded
-        .iter()
-        .map(|s| s.to_string())
-        .collect::<String>()
-        .chars()
-        .enumerate()
-        .map(|(i, c)| {
-            if c.is_digit(10) {
-                i as u64 * c.to_digit(10).unwrap() as u64
-            } else {
-                0
+    let mut checksum: u64 = 0;
+    let mut block_count: u64 = 0;
+    for sector in disk_expanded.iter() {
+        if let File(id, size) = sector {
+            for _ in 0u8..*size {
+                checksum += block_count * (*id as u64);
+                block_count += 1;
             }
-        })
-        .sum();
+        } else {
+            break;
+        }
+    }
     println!("{checksum}")
 }
 
