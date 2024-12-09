@@ -80,7 +80,7 @@ fn antinode_checker(ignore_distance: bool) {
             *c = '#';
         }
     }
-    print_grid(&grid2);
+    grid2.print();
     println!("sum = {}", antinodes.len());
 }
 
@@ -104,14 +104,4 @@ fn create_distance_grid(station_pos: (usize, usize), original_grid: &Grid<char>)
         *c = station_pos.0.abs_diff(row) + station_pos.1.abs_diff(col);
     }
     grid
-}
-
-fn print_grid<T>(grid: &Grid<T>)
-where
-    T: std::fmt::Display,
-    String: for<'a> FromIterator<&'a T>,
-{
-    for row in grid.iter_rows() {
-        println!("{}", row.collect::<String>());
-    }
 }

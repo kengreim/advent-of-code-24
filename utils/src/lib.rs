@@ -13,6 +13,13 @@ pub trait GridExt<T> {
     fn parse_from_str(input: &str, split_fn: impl Fn(&str) -> Vec<T>) -> Option<Self>
     where
         Self: Sized;
+
+    fn count_if(&self, predicate: impl Fn(&T) -> bool) -> usize;
+
+    fn print(&self)
+    where
+        T: std::fmt::Display,
+        String: for<'a> FromIterator<&'a T>;
 }
 
 impl<T> GridExt<T> for Grid<T> {
@@ -33,6 +40,20 @@ impl<T> GridExt<T> for Grid<T> {
             input.lines().flat_map(split_fn).collect::<Vec<T>>(),
             num_cols,
         ))
+    }
+
+    fn count_if(&self, predicate: impl Fn(&T) -> bool) -> usize {
+        self.iter().filter(|t| predicate(*t)).count()
+    }
+
+    fn print(&self)
+    where
+        T: std::fmt::Display,
+        String: for<'a> FromIterator<&'a T>,
+    {
+        for row in self.iter_rows() {
+            println!("{}", row.collect::<String>());
+        }
     }
 }
 
