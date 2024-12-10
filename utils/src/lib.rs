@@ -23,6 +23,14 @@ pub trait GridExt<T> {
         String: for<'a> FromIterator<&'a T>;
 
     fn cardinal_neighbors(&self, idx: (usize, usize)) -> Vec<((usize, usize), &T)>;
+
+    fn cardinal_neighbors_with<'a>(
+        &'a self,
+        idx: (usize, usize),
+        pred: impl Fn(&T) -> bool,
+    ) -> impl Iterator<Item = ((usize, usize), &'a T)>
+    where
+        T: 'a;
 }
 
 impl<T> GridExt<T> for Grid<T> {
@@ -78,6 +86,16 @@ impl<T> GridExt<T> for Grid<T> {
             res.push(((r, c + 1), v));
         }
         res
+    }
+
+    fn cardinal_neighbors_with<'a>(
+        &'a self,
+        idx: (usize, usize),
+        pred: impl Fn(&'a T) -> bool,
+    ) -> impl Iterator<Item = ((usize, usize), &'a T)> {
+        self.cardinal_neighbors(idx)
+            .into_iter()
+            .filter(move |((_, _), v)| pred(v))
     }
 }
 

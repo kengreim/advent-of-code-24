@@ -1,7 +1,7 @@
 #![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 
 use grid::Grid;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::fs;
 use std::time::Instant;
 use utils::GridExt;
@@ -16,7 +16,8 @@ fn main() {
 fn part1(path: &str) {
     let input = fs::read_to_string(path).unwrap();
     let grid = Grid::parse_from_str(&input, |l| {
-        l.chars()
+        l.trim()
+            .chars()
             .map(|c| c.to_digit(10).unwrap())
             .collect::<Vec<_>>()
     })
@@ -24,22 +25,22 @@ fn part1(path: &str) {
 
     let trailheads = grid
         .filtered_indexed_iter(|n| *n == 0)
-        .map(|((r, c), _)| ((r, c), 0))
-        .collect::<HashMap<(usize, usize), i32>>();
+        .map(|((r, c), _)| (r, c))
+        .collect::<Vec<_>>();
 
-    let sum = trailheads
-        .keys()
+    let sum: usize = trailheads
+        .iter()
         .map(|idx| {
-            let mut set = HashSet::new();
-            set.insert(*idx);
-            paths_to_peak_p1(&grid, set, 1).iter().len()
+            paths_to_peak_p1(&grid, HashSet::from([*idx]), 1)
+                .iter()
+                .len()
         })
-        .sum::<usize>();
+        .sum();
 
-    let sum2 = trailheads
-        .keys()
+    let sum2: usize = trailheads
+        .iter()
         .map(|idx| paths_to_peak_p2(&grid, vec![*idx], 1).iter().len())
-        .sum::<usize>();
+        .sum();
 
     println!("Part 1: {sum:?}");
     println!("Part 2: {sum2:?}");
@@ -55,7 +56,11 @@ fn paths_to_peak_p1(
     } else {
         let new_points = initial_points
             .iter()
-            .flat_map(|idx| cardinal_neighbors_with(grid, *idx, |v| v == next_val))
+            .flat_map(|idx| {
+                grid.cardinal_neighbors_with(*idx, |v| *v == next_val)
+                    .map(idx_only)
+                    .collect::<Vec<_>>()
+            })
             .collect::<HashSet<(usize, usize)>>();
         paths_to_peak_p1(grid, new_points, next_val + 1)
     }
@@ -71,27 +76,16 @@ fn paths_to_peak_p2(
     } else {
         let new_points = initial_points
             .iter()
-            .flat_map(|idx| cardinal_neighbors_with(grid, *idx, |v| v == next_val))
+            .flat_map(|idx| {
+                grid.cardinal_neighbors_with(*idx, |v| *v == next_val)
+                    .map(idx_only)
+                    .collect::<Vec<_>>()
+            })
             .collect::<Vec<_>>();
         paths_to_peak_p2(grid, new_points, next_val + 1)
     }
 }
 
-fn cardinal_neighbors_with(
-    grid: &Grid<u32>,
-    idx: (usize, usize),
-    pred: impl Fn(u32) -> bool,
-) -> Vec<(usize, usize)> {
-    grid.cardinal_neighbors(idx)
-        .iter()
-        .filter_map(
-            |((r, c), val)| {
-                if pred(**val) {
-                    Some((*r, *c))
-                } else {
-                    None
-                }
-            },
-        )
-        .collect::<Vec<_>>()
+fn idx_only<T>(val: ((usize, usize), &T)) -> (usize, usize) {
+    (val.0 .0, val.0 .1)
 }
