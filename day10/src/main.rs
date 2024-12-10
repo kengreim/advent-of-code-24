@@ -47,7 +47,7 @@ fn paths_to_peak_p1(
     initial_points: HashSet<(usize, usize)>,
     next_val: u32,
 ) -> HashSet<(usize, usize)> {
-    if next_val > 9 {
+    if next_val > 9 || initial_points.len() == 0 {
         initial_points
     } else {
         let new_points = initial_points
@@ -67,7 +67,7 @@ fn paths_to_peak_p2(
     initial_points: Vec<(usize, usize)>,
     next_val: u32,
 ) -> Vec<(usize, usize)> {
-    if next_val > 9 {
+    if next_val > 9 || initial_points.len() == 0 {
         initial_points
     } else {
         let new_points = initial_points
