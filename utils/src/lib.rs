@@ -1,6 +1,7 @@
 #![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 
 use grid::Grid;
+use std::cmp::Ordering;
 
 pub trait GridExt<T> {
     fn filtered_indexed_iter<'a>(
@@ -20,6 +21,8 @@ pub trait GridExt<T> {
     where
         T: std::fmt::Display,
         String: for<'a> FromIterator<&'a T>;
+
+    fn cardinal_neighbors(&self, idx: (usize, usize)) -> Vec<((usize, usize), &T)>;
 }
 
 impl<T> GridExt<T> for Grid<T> {
@@ -34,9 +37,9 @@ impl<T> GridExt<T> for Grid<T> {
             .filter(move |((_, _), val)| filter_fn(*val))
     }
 
-    fn parse_from_str(input: &str, split_fn: impl Fn(&str) -> Vec<T>) -> Option<Grid<T>> {
+    fn parse_from_str(input: &str, split_fn: impl Fn(&str) -> Vec<T>) -> Option<Self> {
         let num_cols = split_fn(input.split_once('\n')?.0).len();
-        Some(Grid::from_vec(
+        Some(Self::from_vec(
             input.lines().flat_map(split_fn).collect::<Vec<T>>(),
             num_cols,
         ))
@@ -54,6 +57,27 @@ impl<T> GridExt<T> for Grid<T> {
         for row in self.iter_rows() {
             println!("{}", row.collect::<String>());
         }
+    }
+
+    fn cardinal_neighbors(&self, idx: (usize, usize)) -> Vec<((usize, usize), &T)> {
+        let (r, c) = idx;
+
+        let mut res = match (r.cmp(&0), c.cmp(&0)) {
+            (Ordering::Greater, Ordering::Greater) => vec![
+                ((r - 1, c), self.get(r - 1, c).unwrap()),
+                ((r, c - 1), self.get(r, c - 1).unwrap()),
+            ],
+            (Ordering::Greater, _) => vec![((r - 1, c), self.get(r - 1, c).unwrap())],
+            (_, Ordering::Greater) => vec![((r, c - 1), self.get(r, c - 1).unwrap())],
+            (_, _) => vec![],
+        };
+        if let Some(v) = self.get(r + 1, c) {
+            res.push(((r + 1, c), v));
+        }
+        if let Some(v) = self.get(r, c + 1) {
+            res.push(((r, c + 1), v));
+        }
+        res
     }
 }
 
