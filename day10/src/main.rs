@@ -9,11 +9,11 @@ use utils::GridExt;
 fn main() {
     const PATH: &str = "day10/src/day10_input.txt";
     let start = Instant::now();
-    part1(PATH);
+    run(PATH);
     println!("Duration {:?}", start.elapsed());
 }
 
-fn part1(path: &str) {
+fn run(path: &str) {
     let input = fs::read_to_string(path).unwrap();
     let grid = Grid::parse_from_str(&input, |l| {
         l.trim()
