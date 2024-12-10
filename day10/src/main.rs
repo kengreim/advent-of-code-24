@@ -25,21 +25,17 @@ fn run(path: &str) {
 
     let trailheads = grid
         .filtered_indexed_iter(|n| *n == 0)
-        .map(|((r, c), _)| (r, c))
+        .map(idx_only)
         .collect::<Vec<_>>();
 
     let sum: usize = trailheads
         .iter()
-        .map(|idx| {
-            paths_to_peak_p1(&grid, HashSet::from([*idx]), 1)
-                .iter()
-                .len()
-        })
+        .map(|idx| paths_to_peak_p1(&grid, HashSet::from([*idx]), 1).len())
         .sum();
 
     let sum2: usize = trailheads
         .iter()
-        .map(|idx| paths_to_peak_p2(&grid, vec![*idx], 1).iter().len())
+        .map(|idx| paths_to_peak_p2(&grid, vec![*idx], 1).len())
         .sum();
 
     println!("Part 1: {sum:?}");
