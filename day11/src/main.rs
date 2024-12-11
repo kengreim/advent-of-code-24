@@ -6,9 +6,10 @@ use std::sync::{Arc, RwLock};
 use std::time::Instant;
 
 fn main() {
-    const PATH: &str = "day11/src/day11_input.txt";
+    const PATH: &str = "day11/src/day11_example.txt";
     let start = Instant::now();
-    part1(PATH);
+    //part1(PATH);
+    part2(PATH);
     println!("Duration {:?}", start.elapsed());
 }
 
@@ -22,8 +23,8 @@ fn part1(path: &str) {
         .map(|num| num.parse::<i64>().unwrap())
         .collect::<Vec<i64>>();
 
-    let sum = nums.iter().map(|n| num_stones(*n, 25)).sum::<i64>();
-    println!("Sum: {}", sum);
+    let sum = nums.iter().map(|n| num_stones(*n, 6)).sum::<i64>();
+    println!("Sum: {sum}");
 }
 
 fn part2(path: &str) {
@@ -36,8 +37,15 @@ fn part2(path: &str) {
         .map(|num| num.parse::<i64>().unwrap())
         .collect::<Vec<i64>>();
 
-    let sum = nums.iter().map(|n| num_stones_2(*n, 25)).sum::<i64>();
-    println!("Sum: {}", sum);
+    let map = Arc::new(RwLock::new(HashMap::new()));
+
+    // let sum = nums
+    //     .iter()
+    //     .map(|n| num_stones_2(VecDeque::from([]), *n, 0, 6, map.clone()))
+    //     .sum::<i32>();
+
+    let n = num_stones_2(VecDeque::from([]), 125, 1, 6, map.clone());
+    println!("Sum: {}", n);
 }
 
 fn num_stones(n: i64, iter_remaining: i32) -> i64 {
@@ -58,46 +66,48 @@ fn num_stones(n: i64, iter_remaining: i32) -> i64 {
 fn num_stones_2(
     mut previous_stones: VecDeque<i64>,
     stone: i64,
-    running_sum: i64,
-    iter_remaining: i32,
-    sum_map: Arc<RwLock<HashMap<(i64, i32), i32>>>,
+    running_sum: i32,
+    iter_remaining: usize,
+    sum_map: Arc<RwLock<HashMap<(i64, usize), i32>>>,
 ) -> i32 {
+    let mut read_lock = sum_map.read().unwrap();
+    let cached = read_lock.get(&(stone, iter_remaining)).copied();
+    drop(read_lock);
+
     if iter_remaining == 0 {
         previous_stones.push_front(stone);
         for (iter, stone) in previous_stones.iter().enumerate() {
-            sum_map
-                .write()
-                .unwrap()
-                .insert((*stone, *iter), *running_sum)
+            //println!("Iter: {iter}: {stone}");
+            sum_map.write().unwrap().insert((*stone, iter), running_sum);
+            //println!("Sum: {stone}");
         }
-        1
-    } else if let Some(sum) = sum_map.read().unwrap().get(&(stone, iter_remaining)) {
-        *sum
+        running_sum
+    } else if let Some(sum) = cached {
+        println!("found: {sum}");
+        sum
     } else {
+        previous_stones.push_front(stone);
+
         if stone == 0 {
-            previous_stones.push_front(stone);
+            let mut lock = sum_map.write().unwrap();
             for (iter, stone) in previous_stones.iter().enumerate() {
-                sum_map
-                    .write()
-                    .unwrap()
-                    .insert((*stone, *iter), *running_sum)
+                lock.insert((*stone, iter), running_sum);
             }
+            drop(lock);
 
             num_stones_2(
                 previous_stones.clone(),
                 1,
                 running_sum,
                 iter_remaining - 1,
-                Arc::clone(&sum_map),
+                sum_map.clone(),
             )
         } else if stone.to_string().len() % 2 == 0 {
-            previous_stones.push_front(stone);
+            let mut lock = sum_map.write().unwrap();
             for (iter, stone) in previous_stones.iter().enumerate() {
-                sum_map
-                    .write()
-                    .unwrap()
-                    .insert((*stone, *iter), *running_sum + 1)
+                lock.insert((*stone, iter), running_sum + 1);
             }
+            drop(lock);
 
             let (n1, n2) = split_num(stone);
             num_stones_2(
@@ -105,28 +115,27 @@ fn num_stones_2(
                 n1,
                 running_sum + 1,
                 iter_remaining - 1,
-                Arc::clone(&sum_map),
+                sum_map.clone(),
             ) + num_stones_2(
                 previous_stones.clone(),
                 n2,
                 running_sum + 1,
                 iter_remaining - 1,
-                Arc::clone(&sum_map),
+                sum_map.clone(),
             )
         } else {
+            let mut lock = sum_map.write().unwrap();
             for (iter, stone) in previous_stones.iter().enumerate() {
-                sum_map
-                    .write()
-                    .unwrap()
-                    .insert((*stone, *iter), *running_sum)
+                lock.insert((*stone, iter), running_sum);
             }
+            drop(lock);
 
             num_stones_2(
                 previous_stones.clone(),
                 stone * 2024,
                 running_sum,
                 iter_remaining - 1,
-                Arc::clone(&sum_map),
+                sum_map.clone(),
             )
         }
     }
