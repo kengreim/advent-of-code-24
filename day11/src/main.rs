@@ -102,4 +102,8 @@ fn split_num(n: i64) -> (i64, i64) {
     let s = n.to_string();
     let (s1, s2) = s.split_at(s.len() / 2);
     (s1.parse::<i64>().unwrap(), s2.parse::<i64>().unwrap())
+
+    // let d = 10i64.pow(s.len() as u32 / 2) as i64;
+    // let (div, rem) = (n / d, n % d);
+    // (div, rem)
 }
