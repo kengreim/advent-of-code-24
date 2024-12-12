@@ -85,7 +85,7 @@ fn get_regions(grid: &Grid<char>) -> Vec<(char, Vec<(usize, usize)>)> {
 
 fn part2(path: &str) {
     let input = fs::read_to_string(path).unwrap();
-    let (padded_vec, num_cols) = pad_grid_from_str(&input, '.').unwrap();
+    let (padded_vec, num_cols) = pad_grid_from_str(&input, '.', 1).unwrap();
 
     let grid = Grid::from_vec(padded_vec, num_cols);
     let regions = get_regions(&grid);
@@ -98,21 +98,31 @@ fn part2(path: &str) {
     }
 }
 
-fn pad_grid_from_str(original: &str, pad_char: char) -> Option<(Vec<char>, usize)> {
+fn pad_grid_from_str(
+    original: &str,
+    pad_char: char,
+    pad_size: usize,
+) -> Option<(Vec<char>, usize)> {
     let mut padded = Vec::new();
     let lines = original.lines().collect::<Vec<_>>();
     let num_cols = lines.get(0)?.trim().chars().count();
 
-    let pad_row = repeat(pad_char).take(num_cols + 2).collect::<Vec<_>>();
+    let pad_row = repeat(pad_char)
+        .take(num_cols + 2 * pad_size)
+        .collect::<Vec<_>>();
     padded.extend(pad_row.clone());
     for line in lines {
-        padded.push(pad_char);
+        for _ in 0..pad_size {
+            padded.push(pad_char);
+        }
         padded.extend(line.trim().chars());
-        padded.push(pad_char);
+        for _ in 0..pad_size {
+            padded.push(pad_char);
+        }
     }
     padded.extend(pad_row);
 
-    Some((padded, num_cols + 2))
+    Some((padded, num_cols + 2 * pad_size))
 }
 
 fn corner_val(grid: &Grid<char>, pos: (usize, usize)) -> i32 {
@@ -124,22 +134,38 @@ fn corner_val(grid: &Grid<char>, pos: (usize, usize)) -> i32 {
         grid[(r, c + 1)] == ch,
         grid[(r + 1, c)] == ch,
     );
-    match (left, up, right, down) {
+
+    // let v = match (left, up, right, down) {
+    //     (false, false, false, false) => 4,
+    //     (true, false, false, false) => 2,
+    //     (true, true, false, false) => 1,
+    //     (true, true, true, false) => 0,
+    //     (true, true, true, true) => 0,
+    //     (false, true, false, false) => 2,
+    //     (false, true, true, false) => 1,
+    //     (false, true, true, true) => 0,
+    //     (false, false, true, false) => 2,
+    //     (false, false, true, true) => 1,
+    //     (true, false, true, false) => 0,
+    //     (true, false, true, true) => 1,
+    //     (false, true, false, true) => 0,
+    //     (false, false, false, true) => 2,
+    //     (true, false, false, true) => 1,
+    //     (true, true, false, true) => 0,
+    // };
+    let v = match (left, up, right, down) {
+        (true, false, false, false) => 3,
+        (false, true, false, false) => 3,
+        (false, false, true, false) => 3,
+        (false, false, false, true) => 3,
         (false, false, false, false) => 4,
-        (true, false, false, false) => 2,
         (true, true, false, false) => 1,
-        (true, true, true, false) => 1,
-        (true, true, true, true) => 1,
-        (false, true, false, false) => 2,
         (false, true, true, false) => 1,
-        (false, true, true, true) => 1,
-        (false, false, true, false) => 2,
         (false, false, true, true) => 1,
-        (true, false, true, false) => 0,
-        (true, false, true, true) => 1,
-        (false, true, false, true) => 0,
-        (false, false, false, true) => 2,
         (true, false, false, true) => 1,
-        (true, true, false, true) => 1,
-    }
+        _ => 0,
+    };
+    println!("{v} {:?}", pos);
+    //println!("{left} {up} {right} {down}");
+    v
 }
