@@ -3,6 +3,13 @@
 use grid::Grid;
 use std::cmp::Ordering;
 
+pub enum Direction {
+    Left,
+    Up,
+    Right,
+    Down,
+}
+
 pub trait GridExt<T> {
     fn filtered_indexed_iter<'a>(
         &'a self,
@@ -23,6 +30,11 @@ pub trait GridExt<T> {
         String: for<'a> FromIterator<&'a T>;
 
     fn cardinal_neighbors(&self, idx: (usize, usize)) -> Vec<((usize, usize), &T)>;
+
+    fn cardinal_neighbors_with_direction(
+        &self,
+        idx: (usize, usize),
+    ) -> Vec<((usize, usize), &T, Direction)>;
 
     fn cardinal_neighbors_with<'a>(
         &'a self,
@@ -84,6 +96,34 @@ impl<T> GridExt<T> for Grid<T> {
         }
         if let Some(v) = self.get(r, c + 1) {
             res.push(((r, c + 1), v));
+        }
+        res
+    }
+
+    fn cardinal_neighbors_with_direction(
+        &self,
+        idx: (usize, usize),
+    ) -> Vec<((usize, usize), &T, Direction)> {
+        let (r, c) = idx;
+
+        let mut res = match (r.cmp(&0), c.cmp(&0)) {
+            (Ordering::Greater, Ordering::Greater) => vec![
+                ((r - 1, c), self.get(r - 1, c).unwrap(), Direction::Up),
+                ((r, c - 1), self.get(r, c - 1).unwrap(), Direction::Left),
+            ],
+            (Ordering::Greater, _) => {
+                vec![((r - 1, c), self.get(r - 1, c).unwrap(), Direction::Up)]
+            }
+            (_, Ordering::Greater) => {
+                vec![((r, c - 1), self.get(r, c - 1).unwrap(), Direction::Left)]
+            }
+            (_, _) => vec![],
+        };
+        if let Some(v) = self.get(r + 1, c) {
+            res.push(((r + 1, c), v, Direction::Down));
+        }
+        if let Some(v) = self.get(r, c + 1) {
+            res.push(((r, c + 1), v, Direction::Up));
         }
         res
     }
