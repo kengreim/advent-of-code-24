@@ -2,6 +2,7 @@
 
 use grid::Grid;
 use std::cmp::Ordering;
+use std::iter::repeat;
 
 pub enum Direction {
     Left,
@@ -21,6 +22,16 @@ pub trait GridExt<T> {
     fn parse_from_str(input: &str, split_fn: impl Fn(&str) -> Vec<T>) -> Option<Self>
     where
         Self: Sized;
+
+    fn parse_from_str_with_padding(
+        input: &str,
+        split_fn: impl Fn(&str) -> Vec<T>,
+        pad_element: T,
+        pad_size: usize,
+    ) -> Option<Self>
+    where
+        Self: Sized,
+        T: Clone;
 
     fn count_if(&self, predicate: impl Fn(&T) -> bool) -> usize;
 
@@ -136,6 +147,40 @@ impl<T> GridExt<T> for Grid<T> {
         self.cardinal_neighbors(idx)
             .into_iter()
             .filter(move |((_, _), v)| pred(v))
+    }
+
+    fn parse_from_str_with_padding(
+        input: &str,
+        split_fn: impl Fn(&str) -> Vec<T>,
+        pad_element: T,
+        pad_size: usize,
+    ) -> Option<Self>
+    where
+        T: Clone,
+    {
+        let mut padded: Vec<T> = Vec::new();
+        let lines = input.lines().collect::<Vec<_>>();
+        let num_cols = split_fn(lines.first()?.trim()).len();
+        let padded_num_cols = num_cols + 2 * pad_size;
+
+        let pad_row = repeat(pad_element.clone()).take(padded_num_cols);
+        padded.extend(pad_row.clone());
+        for line in lines {
+            for _ in 0..pad_size {
+                padded.push(pad_element.clone());
+            }
+            padded.extend(split_fn(line));
+            for _ in 0..pad_size {
+                padded.push(pad_element.clone());
+            }
+        }
+        padded.extend(pad_row);
+
+        if padded.len() % padded_num_cols == 0 {
+            Some(Self::from_vec(padded, padded_num_cols))
+        } else {
+            None
+        }
     }
 }
 

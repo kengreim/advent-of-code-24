@@ -85,9 +85,11 @@ fn get_regions(grid: &Grid<char>) -> Vec<(char, Vec<(usize, usize)>)> {
 
 fn part2(path: &str) {
     let input = fs::read_to_string(path).unwrap();
-    let (padded_vec, num_cols) = pad_grid_from_str(&input, '.', 1).unwrap();
+    //let (padded_vec, num_cols) = pad_grid_from_str(&input, '.', 1).unwrap();
 
-    let grid = Grid::from_vec(padded_vec, num_cols);
+    let grid =
+        Grid::parse_from_str_with_padding(&input, |l| l.trim().chars().collect::<Vec<_>>(), '.', 1)
+            .unwrap();
     let regions = get_regions(&grid);
     for (ch, coords) in regions {
         let sum = coords
