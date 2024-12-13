@@ -100,9 +100,7 @@ fn find_machine_solutions(a: &(i64, i64), b: &(i64, i64), prize: &(i64, i64)) ->
             solutions.push((a_press, b_press1 as i64));
         }
     }
-    if solutions.len() > 1 {
-        println!("multiple");
-    }
+
     solutions
 }
 
