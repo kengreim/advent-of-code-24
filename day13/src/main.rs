@@ -116,10 +116,10 @@ fn find_machine_solution_2(
     let numerator = (bx * prize_y) - (by * prize_x);
     let denominator = (ay * bx) - (by * ax);
 
-    let a_press = numerator as f64 / denominator as f64;
-    if a_press.fract() == 0.0 {
-        let b_press = (prize_x - (ax * a_press as i64)) / bx;
-        Some((a_press as i64, b_press))
+    if numerator % denominator == 0 {
+        let a_press = numerator / denominator;
+        let b_press = (prize_x - (ax * a_press)) / bx;
+        Some((a_press, b_press))
     } else {
         None
     }
