@@ -34,7 +34,7 @@ fn part1(path: &str) {
             find_machine_solutions(a, b, prize)
                 .into_iter()
                 .map(score)
-                .max()
+                .min()
         })
         .sum::<i64>();
     println!("Part 1: {sum}");
