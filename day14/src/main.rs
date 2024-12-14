@@ -1,10 +1,11 @@
 #![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 
+use grid_util::{BoolGrid, Grid};
 use regex::Regex;
 use std::fs;
 use std::sync::LazyLock;
 
-type Pos = (i32, i32);
+type Pos = (usize, usize);
 type Velocity = (i32, i32);
 
 static ROBOT_RE: LazyLock<Regex> =
@@ -12,17 +13,19 @@ static ROBOT_RE: LazyLock<Regex> =
 fn main() {
     const PATH: &str = "day14/src/day14_input.txt";
     let start = std::time::Instant::now();
-    part1(PATH);
+    //part1(PATH);
+    part2(PATH);
     let end = start.elapsed();
-    println!("{:?}", end);
+    println!("{end:?}");
 }
 
 fn part1(path: &str) {
-    let input = fs::read_to_string(path).unwrap();
-    let robots = parse_robots(&input).unwrap();
     const WIDTH: usize = 101;
     const HEIGHT: usize = 103;
     const STEPS: usize = 100;
+
+    let input = fs::read_to_string(path).unwrap();
+    let robots = parse_robots(&input);
 
     let all_positions = robots
         .into_iter()
@@ -32,30 +35,62 @@ fn part1(path: &str) {
     let product = make_quadrants(&all_positions, (WIDTH, HEIGHT))
         .iter()
         .flatten()
-        .map(|q| q.len())
+        .map(Vec::len)
         .product::<usize>();
 
     println!("{product}");
 }
 
+fn part2(path: &str) {
+    const WIDTH: usize = 101;
+    const HEIGHT: usize = 103;
+
+    let input = fs::read_to_string(path).unwrap();
+    let robots = parse_robots(&input);
+
+    for i in 0..10 {
+        let positions = robots
+            .iter()
+            .map(|r| robot_pos_after_steps(*r, (WIDTH, HEIGHT), i))
+            .collect::<Vec<_>>();
+        let grid = load_grid(&positions, (WIDTH, HEIGHT));
+    }
+}
+
+fn load_grid(positions: &[Pos], (width, height): (usize, usize)) -> BoolGrid {
+    let mut grid = BoolGrid::new(width, height, false);
+    for (x, y) in positions {
+        grid.set(*x, *y, true);
+    }
+    grid
+}
+
+fn find_starting_positions(positions: &[Pos], grid: &BoolGrid) -> Vec<Pos> {
+    positions
+        .iter()
+        .filter(|(x, y)| *y == 0 || !grid.get(*x, *y - 1))
+        .collect()
+}
+
 fn make_quadrants(positions: &[Pos], (width, height): (usize, usize)) -> Vec<Vec<Vec<Pos>>> {
-    let mut res: Vec<Vec<Vec<(i32, i32)>>> = vec![vec![vec![], vec![]], vec![vec![], vec![]]];
+    let mut res: Vec<Vec<Vec<Pos>>> = vec![vec![vec![], vec![]], vec![vec![], vec![]]];
     let x_mid = width / 2;
     let y_mid = height / 2;
 
     for (x, y) in positions {
-        if *x == x_mid as i32 || *y == y_mid as i32 {
+        if *x == x_mid || *y == y_mid {
             continue;
         }
 
-        let x_quad = if *x < x_mid as i32 { 0 } else { 1 };
-        let y_quad = if *y < y_mid as i32 { 0 } else { 1 };
-        res[x_quad][y_quad].push((*x, *y))
+        let x_quad = usize::from(*x >= x_mid);
+        let y_quad = usize::from(*y >= y_mid);
+        res[x_quad][y_quad].push((*x, *y));
     }
 
     res
 }
 
+#[allow(dead_code)]
 fn robot_walk(
     (pos, v): (Pos, Velocity),
     (width, height): (usize, usize),
@@ -66,7 +101,7 @@ fn robot_walk(
         .collect()
 }
 
-fn robot_pos_after_steps(
+const fn robot_pos_after_steps(
     (pos, v): (Pos, Velocity),
     (width, height): (usize, usize),
     steps: usize,
@@ -74,21 +109,20 @@ fn robot_pos_after_steps(
     let (start_x, start_y) = pos;
     let (vx, vy) = v;
     (
-        (start_x + steps as i32 * vx).rem_euclid(width as i32),
-        (start_y + steps as i32 * vy).rem_euclid(height as i32),
+        (start_x as i32 + steps as i32 * vx).rem_euclid(width as i32) as usize,
+        (start_y as i32 + steps as i32 * vy).rem_euclid(height as i32) as usize,
     )
 }
 
-fn parse_robots(input: &str) -> Option<Vec<(Pos, Velocity)>> {
+fn parse_robots(input: &str) -> Vec<(Pos, Velocity)> {
     let res = input
         .lines()
-        .into_iter()
         .filter_map(|line| {
             let caps = ROBOT_RE.captures(line)?;
             Some((
                 (
-                    caps[1].to_string().parse::<i32>().ok()?,
-                    caps[2].to_string().parse::<i32>().ok()?,
+                    caps[1].to_string().parse::<usize>().ok()?,
+                    caps[2].to_string().parse::<usize>().ok()?,
                 ),
                 (
                     caps[3].to_string().parse::<i32>().ok()?,
@@ -97,5 +131,5 @@ fn parse_robots(input: &str) -> Option<Vec<(Pos, Velocity)>> {
             ))
         })
         .collect::<Vec<_>>();
-    Some(res)
+    res
 }
