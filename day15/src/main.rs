@@ -4,27 +4,25 @@ use grid::Grid;
 use utils::GridExt;
 
 fn main() {
-    const PATH: &str = "day15/src/day15_input.txt";
-    part1(PATH);
+    const PATH: &str = "day15/src/day15_test.txt";
+    //part1(PATH);
     part2(PATH);
 }
 
 fn part1(path: &str) {
     let input = std::fs::read_to_string(path).unwrap();
-
     let (mut grid, mut pos) = parse_grid(&input).unwrap();
-    let moves = parse_moves(&input);
 
-    for m in moves {
+    for m in parse_moves(&input) {
         let (next_cell, next_val) = find_next(&grid, pos, m);
-        if let Some(c) = next_val {
-            if c == '#' {
-                continue;
-            } else if c == '.' {
+        match next_val.unwrap() {
+            '#' => continue,
+            '.' => {
                 grid[next_cell] = '@';
                 grid[pos] = '.';
                 pos = next_cell;
-            } else if c == 'O' {
+            }
+            'O' => {
                 let delta = move_to_delta(m);
                 if let Some(free_pos) = next_free(&grid, next_cell, delta) {
                     grid[free_pos] = 'O';
@@ -33,8 +31,7 @@ fn part1(path: &str) {
                     pos = next_cell;
                 }
             }
-        } else {
-            panic!()
+            _ => panic!(),
         }
     }
 
@@ -48,8 +45,51 @@ fn part2(path: &str) {
     let (original_grid, _) = parse_grid(&input).unwrap();
     let (mut grid, mut pos) = widen_grid(&original_grid);
 
+    #[cfg(debug_assertions)]
     grid.print();
-    //let moves = parse_moves(&input);
+    
+    for m in parse_moves(&input) {
+        #[cfg(debug_assertions)]
+        println!("Move {m}");
+
+        let (next_cell, next_val) = find_next(&grid, pos, m);
+        match next_val.unwrap() {
+            '#' => (), // continue
+            '.' => {
+                grid[next_cell] = '@';
+                grid[pos] = '.';
+                pos = next_cell;
+            }
+            '[' | ']' => match m {
+                '<' | '>' => {
+                    let delta = move_to_delta(m);
+                    if let Some((_, free_col)) = next_free(&grid, next_cell, delta) {
+                        let (next_row, next_col) = next_cell;
+                        let reverse = free_col > next_col;
+
+                        let mut moving_char = if free_col < next_col { '[' } else { ']' };
+                        let mut move_col = free_col;
+                        while move_col != next_col {
+                            grid[(next_row, move_col)] = moving_char;
+                            moving_char = if moving_char == '[' { ']' } else { '[' };
+                            move_col = if reverse { move_col - 1 } else { move_col + 1 };
+                        }
+                        grid[next_cell] = '@';
+                        grid[pos] = '.';
+                        pos = next_cell;
+                    }
+                }
+                '^' | 'v' => {
+                    todo!()
+                }
+                _ => panic!(),
+            },
+            _ => panic!(),
+        }
+
+        #[cfg(debug_assertions)]
+        grid.print();
+    }
 }
 
 fn score_grid(grid: &Grid<char>) -> usize {
