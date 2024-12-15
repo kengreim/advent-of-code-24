@@ -3,7 +3,8 @@ use utils::GridExt;
 
 fn main() {
     const PATH: &str = "day15/src/day15_input.txt";
-    part1(PATH);
+    // part1(PATH);
+    part2(PATH);
 }
 
 fn part1(path: &str) {
@@ -37,6 +38,16 @@ fn part1(path: &str) {
 
     grid.print();
     println!("{}", score_grid(&grid));
+}
+
+fn part2(path: &str) {
+    let input = std::fs::read_to_string(path).unwrap();
+
+    let (original_grid, _) = parse_grid(&input).unwrap();
+    let (mut grid, mut pos) = widen_grid(&original_grid);
+
+    grid.print();
+    //let moves = parse_moves(&input);
 }
 
 fn score_grid(grid: &Grid<char>) -> usize {
@@ -99,14 +110,10 @@ fn parse_grid(input: &str) -> Option<(Grid<char>, (usize, usize))> {
         .filter(|l| l.starts_with('#'))
         .collect::<Vec<_>>();
 
-    let num_cols = lines.get(0)?.trim().chars().count();
+    let num_cols = lines.first()?.trim().chars().count();
 
     let grid = Grid::from_vec(
-        lines
-            .into_iter()
-            .map(|l| l.trim().chars())
-            .flatten()
-            .collect(),
+        lines.into_iter().flat_map(|l| l.trim().chars()).collect(),
         num_cols,
     );
 
@@ -129,7 +136,31 @@ fn parse_moves(input: &str) -> Vec<char> {
         .filter(|l| {
             l.starts_with('^') || l.starts_with('v') || l.starts_with('<') || l.starts_with('>')
         })
-        .map(|l| l.trim().chars())
-        .flatten()
+        .flat_map(|l| l.trim().chars())
         .collect::<Vec<_>>()
+}
+
+fn widen_grid(grid: &Grid<char>) -> (Grid<char>, (usize, usize)) {
+    let mut new_grid = Grid::new(grid.rows(), grid.cols() * 2);
+    let mut start_pos = (0usize, 0usize);
+    for ((row, col), c) in grid.indexed_iter() {
+        match *c {
+            '.' | '#' => {
+                new_grid[(row, col * 2)] = *c;
+                new_grid[(row, col * 2 + 1)] = *c;
+            }
+            'O' => {
+                new_grid[(row, col * 2)] = '[';
+                new_grid[(row, col * 2 + 1)] = ']';
+            }
+            '@' => {
+                new_grid[(row, col * 2)] = '@';
+                new_grid[(row, col * 2 + 1)] = '*';
+                start_pos = (row, col * 2);
+            }
+            _ => panic!("Invalid grid char: {c}"),
+        }
+    }
+
+    (new_grid, start_pos)
 }
