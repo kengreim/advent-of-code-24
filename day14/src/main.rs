@@ -29,7 +29,6 @@ fn part1(path: &str) {
     let robots = parse_robots(&input);
 
     let all_positions = robots
-        .into_iter()
         .map(|r| robot_pos_after_steps(r, (WIDTH, HEIGHT), STEPS))
         .collect::<Vec<_>>();
 
@@ -47,7 +46,7 @@ fn part2(path: &str) {
     const HEIGHT: usize = 103;
 
     let input = fs::read_to_string(path).unwrap();
-    let mut robots = parse_robots(&input);
+    let mut robots = parse_robots(&input).collect::<Vec<_>>();
 
     let mut i = 0;
     loop {
@@ -177,22 +176,19 @@ fn advance_robots(
         .collect()
 }
 
-fn parse_robots(input: &str) -> Vec<(Pos, Velocity)> {
-    let res = input
-        .lines()
-        .filter_map(|line| {
-            let caps = ROBOT_RE.captures(line)?;
-            Some((
-                (
-                    caps[1].to_string().parse::<usize>().ok()?,
-                    caps[2].to_string().parse::<usize>().ok()?,
-                ),
-                (
-                    caps[3].to_string().parse::<i32>().ok()?,
-                    caps[4].to_string().parse::<i32>().ok()?,
-                ),
-            ))
-        })
-        .collect::<Vec<_>>();
+fn parse_robots(input: &str) -> impl Iterator<Item = (Pos, Velocity)> + use<'_> {
+    let res = input.lines().filter_map(|line| {
+        let caps = ROBOT_RE.captures(line)?;
+        Some((
+            (
+                caps[1].to_string().parse::<usize>().ok()?,
+                caps[2].to_string().parse::<usize>().ok()?,
+            ),
+            (
+                caps[3].to_string().parse::<i32>().ok()?,
+                caps[4].to_string().parse::<i32>().ok()?,
+            ),
+        ))
+    });
     res
 }
