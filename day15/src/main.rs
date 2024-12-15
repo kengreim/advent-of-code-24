@@ -1,9 +1,11 @@
+#![warn(clippy::all, clippy::pedantic, clippy::nursery)]
+
 use grid::Grid;
 use utils::GridExt;
 
 fn main() {
     const PATH: &str = "day15/src/day15_input.txt";
-    // part1(PATH);
+    part1(PATH);
     part2(PATH);
 }
 
@@ -23,8 +25,8 @@ fn part1(path: &str) {
                 grid[pos] = '.';
                 pos = next_cell;
             } else if c == 'O' {
-                let (delta_row, delta_col) = move_to_delta(m);
-                if let Some(free_pos) = next_free(&grid, next_cell, (delta_row, delta_col)) {
+                let delta = move_to_delta(m);
+                if let Some(free_pos) = next_free(&grid, next_cell, delta) {
                     grid[free_pos] = 'O';
                     grid[next_cell] = '@';
                     grid[pos] = '.';
@@ -84,24 +86,21 @@ fn next_free(
     (row, col): (usize, usize),
     (delta_row, delta_col): (isize, isize),
 ) -> Option<(usize, usize)> {
-    if let Some(c) = grid.get(row, col) {
-        if *c == '.' {
-            Some((row, col))
-        } else if *c == '#' {
-            None
-        } else {
-            next_free(
+    grid.get(row, col).map_or_else(
+        || panic!("Invalid at {row} {col}"),
+        |c| match c {
+            '#' => None,
+            '.' => Some((row, col)),
+            _ => next_free(
                 grid,
                 (
                     (row as isize + delta_row) as usize,
                     (col as isize + delta_col) as usize,
                 ),
                 (delta_row, delta_col),
-            )
-        }
-    } else {
-        unreachable!();
-    }
+            ),
+        },
+    )
 }
 
 fn parse_grid(input: &str) -> Option<(Grid<char>, (usize, usize))> {
@@ -118,33 +117,30 @@ fn parse_grid(input: &str) -> Option<(Grid<char>, (usize, usize))> {
     );
 
     let mut start_pos = (0usize, 0usize);
-    for r in 0..grid.rows() {
-        for c in 0..grid.cols() {
-            if grid[(r, c)] == '@' {
-                start_pos = (r, c);
-                break;
-            }
+    for ((row, col), c) in grid.indexed_iter() {
+        if *c == '@' {
+            start_pos = (row, col);
+            break;
         }
     }
 
     Some((grid, start_pos))
 }
 
-fn parse_moves(input: &str) -> Vec<char> {
+fn parse_moves(input: &str) -> impl Iterator<Item = char> + use<'_> {
     input
         .lines()
         .filter(|l| {
             l.starts_with('^') || l.starts_with('v') || l.starts_with('<') || l.starts_with('>')
         })
         .flat_map(|l| l.trim().chars())
-        .collect::<Vec<_>>()
 }
 
 fn widen_grid(grid: &Grid<char>) -> (Grid<char>, (usize, usize)) {
     let mut new_grid = Grid::new(grid.rows(), grid.cols() * 2);
     let mut start_pos = (0usize, 0usize);
     for ((row, col), c) in grid.indexed_iter() {
-        match *c {
+        match c {
             '.' | '#' => {
                 new_grid[(row, col * 2)] = *c;
                 new_grid[(row, col * 2 + 1)] = *c;
@@ -155,7 +151,7 @@ fn widen_grid(grid: &Grid<char>) -> (Grid<char>, (usize, usize)) {
             }
             '@' => {
                 new_grid[(row, col * 2)] = '@';
-                new_grid[(row, col * 2 + 1)] = '*';
+                new_grid[(row, col * 2 + 1)] = '.';
                 start_pos = (row, col * 2);
             }
             _ => panic!("Invalid grid char: {c}"),
