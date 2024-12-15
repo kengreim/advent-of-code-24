@@ -47,14 +47,14 @@ fn part2(path: &str) {
 
     #[cfg(debug_assertions)]
     grid.print();
-    
+
     for m in parse_moves(&input) {
         #[cfg(debug_assertions)]
         println!("Move {m}");
 
         let (next_cell, next_val) = find_next(&grid, pos, m);
         match next_val.unwrap() {
-            '#' => (), // continue
+            '#' => (), // Not using continue so that we can print in debug before next iteration
             '.' => {
                 grid[next_cell] = '@';
                 grid[pos] = '.';
