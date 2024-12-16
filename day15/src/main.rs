@@ -43,7 +43,29 @@ fn part1(path: &str) {
 }
 
 fn part2(path: &str) {
-    let input = std::fs::read_to_string(path).unwrap();
+    //let input = std::fs::read_to_string(path).unwrap();
+    let input = r#"
+##########
+#..O..O.O#
+#......O.#
+#.OO..O.O#
+#..O@..O.#
+#O#..O...#
+#O..O..O.#
+#.OO.O.OO#
+#....O...#
+##########
+
+<vv>^<v^>v>^vv^v>v<>v^v<v<^vv<<<^><<><>>v<vvv<>^v^>^<<<><<v<<<v^vv^v>^
+vvv<<^>^v^^><<>>><>^<<><^vv^^<>vvv<>><^^v>^>vv<>v<<<<v<^v>^<^^>>>^<v<v
+><>vv>v^v^<>><>>>><^^>vv>v<^^^>>v^v^<^^>v^^>v^<^v>v<>>v^v^<v>v^^<^^vv<
+<<v<^>>^^^^>>>v^<>vvv^><v<<<>^^^vv^<vvv>^>v<^^^^v<>^>vvvv><>>v^<<^^^^^
+^><^><>>><>^^<<^^v>>><^<v>^<vv>>v>>>^v><>^v><<<<v>>v<v<v>vvv>^<><<>^><
+^>><>^v<><^vvv<^^<><v<<<<<><^v<<<><<<^^<v<^^^><^>>^<v^><<<^>>^v<v^v<v^
+>^>>^v>vv>^<<^v<>><<><<v<<v><>v<^vv<<<>^^v^>^^>>><<^v>>v^v><^^>>^<>vv^
+<><^^>^^^<><vvvvv^v<v<<>^v<v>v<<^><<><<><<<^^<<<^<<>><<><^^^>^^<>^>v<>
+^^>vv<^v^v<vv>^<><v<^v>^^^>>>^^vvv^>vvv<>>>^<^>>>>>^<<^v>^vvv<>^<><<v>
+v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^"#;
 
     let (original_grid, _) = parse_grid(&input).unwrap();
     let (mut grid, mut pos) = widen_grid(&original_grid);
@@ -117,12 +139,20 @@ fn part2(path: &str) {
                         }
 
                         for (row, (c1, c2)) in boxes {
-                            let offset_row = if is_increasing_row { row - 1 } else { row + 1 };
+                            let offset_row = if is_increasing_row { row + 1 } else { row - 1 };
 
                             //grid.print();
                             //println!("writing {offset_row} {c1} {c2} to {row} {c1} {c2}");
-                            grid[(row, c1)] = grid[(offset_row, c1)];
-                            grid[(row, c2)] = grid[(offset_row, c2)];
+                            grid[(offset_row, c1)] = grid[(row, c1)];
+                            grid[(offset_row, c2)] = grid[(row, c2)];
+
+                            grid[(row, c1)] = '.';
+                            grid[(row, c2)] = '.';
+
+                            // if grid[(offset_row, c1)] != '@' && grid[(offset_row, c2)] != '@' {
+                            //     grid[(offset_row, c1)] = '.';
+                            //     grid[(offset_row, c2)] = '.';
+                            // }
                         }
 
                         // let mut move_row = free_row;
@@ -160,9 +190,9 @@ fn part2(path: &str) {
                         grid[pos] = '.';
                         pos = next_cell;
                     }
-                    test_grid.print();
+                    //test_grid.print();
                     println!("Move {m}");
-                    grid.print();
+                    //grid.print();
                 }
                 _ => panic!(),
             },
@@ -240,7 +270,7 @@ fn next_free_wide(
     } else if frontier_row.iter().all(|(row, (col1, col2))| {
         *grid.get(*row, *col1).unwrap() == '.' && *grid.get(*row, *col2).unwrap() == '.'
     }) {
-        acc_boxes.extend(frontier_row);
+        //acc_boxes.extend(frontier_row);
         Some(acc_boxes)
     } else {
         acc_boxes.extend(frontier_row.clone());
@@ -249,16 +279,22 @@ fn next_free_wide(
 
         let next_row = if is_increasing_row { row + 1 } else { row - 1 };
 
+        println!("Original Frontier {:?}", new_frontier);
         for (_, (col1, col2)) in frontier_row {
-            new_frontier.push((next_row, (col1, col2)));
             //println!("{next_row} {col1} {col2}");
             if *grid.get(next_row, col1).unwrap() == ']' {
-                new_frontier.push((next_row, (col1 - 1, col1)))
+                new_frontier.push((next_row, (col1 - 1, col1)));
+                println!("frontier left");
             }
             if *grid.get(next_row, col2).unwrap() == '[' {
-                new_frontier.push((next_row, (col2, col2 + 1)))
+                new_frontier.push((next_row, (col2, col2 + 1)));
+                println!("frontier right");
+            }
+            if new_frontier.is_empty() {
+                new_frontier.push((next_row, (col1, col2)));
             }
         }
+        println!("New Frontier {:?}", new_frontier);
 
         next_free_wide(
             grid,
