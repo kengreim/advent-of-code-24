@@ -1,5 +1,8 @@
+#![warn(clippy::all, clippy::pedantic, clippy::nursery)]
+
 use grid::Grid;
-use pathfinding::prelude::dijkstra;
+use pathfinding::prelude::{astar_bag_collect, dijkstra};
+use std::collections::HashSet;
 use std::hash::Hash;
 use utils::GridExt;
 
@@ -40,13 +43,62 @@ struct Node {
 
 fn main() {
     const PATH: &str = "day16/src/day16_input.txt";
-    part1(PATH);
+    let shortest_cost = part1(PATH);
+
+    println!("{shortest_cost}");
+
+    part2(PATH);
 }
 
-fn part1(path: &str) {
+fn part1(path: &str) -> usize {
     let input = std::fs::read_to_string(path).unwrap();
     let grid = Grid::parse_from_str(&input, |l| l.trim().chars().collect::<Vec<char>>()).unwrap();
 
+    let (start, end) = find_start_and_end(&grid).unwrap();
+    let start_node = Node {
+        cell: start,
+        direction: Direction::East,
+    };
+    let end_cell = end;
+
+    let result = dijkstra(
+        &start_node,
+        |n| successors(&grid, n),
+        |n| n.cell == end_cell,
+    );
+    result.unwrap().1
+}
+
+fn part2(path: &str) {
+    let input = std::fs::read_to_string(path).unwrap();
+    let grid = Grid::parse_from_str(&input, |l| l.trim().chars().collect::<Vec<char>>()).unwrap();
+
+    let (start, end) = find_start_and_end(&grid).unwrap();
+    let start_node = Node {
+        cell: start,
+        direction: Direction::East,
+    };
+    let end_cell = end;
+
+    let paths = astar_bag_collect(
+        &start_node,
+        |n| successors(&grid, n),
+        |n| end_cell.0.abs_diff(n.cell.0) + end_cell.1.abs_diff(n.cell.1),
+        |n| n.cell == end_cell,
+    );
+
+    let all_cells = paths
+        .unwrap()
+        .0
+        .iter()
+        .flatten()
+        .map(|p| p.cell)
+        .collect::<HashSet<_>>();
+
+    println!("{}", all_cells.len());
+}
+
+fn find_start_and_end(grid: &Grid<char>) -> Option<(Cell, Cell)> {
     let mut end = None;
     let mut start = None;
     for ((r, c), &val) in grid.indexed_iter() {
@@ -56,20 +108,10 @@ fn part1(path: &str) {
             start = Some((r, c));
         }
     }
-
-    let start_node = Node {
-        cell: start.unwrap(),
-        direction: Direction::East,
-    };
-    let end_cell = end.unwrap();
-
-    let result = dijkstra(
-        &start_node,
-        |n| successors(&grid, n),
-        |n| n.cell == end_cell,
-    );
-
-    println!("{}", result.unwrap().1);
+    match (start, end) {
+        (Some(s), Some(e)) => Some((s, e)),
+        _ => None,
+    }
 }
 
 fn successors(grid: &Grid<char>, node: &Node) -> Vec<(Node, usize)> {
@@ -84,7 +126,7 @@ fn successors(grid: &Grid<char>, node: &Node) -> Vec<(Node, usize)> {
     };
 
     if let Some(&c) = grid.get(next_row, next_col) {
-        if c == '.' || c == 'E' {
+        if c != '#' {
             res.push((
                 Node {
                     cell: (next_row, next_col),
@@ -98,25 +140,22 @@ fn successors(grid: &Grid<char>, node: &Node) -> Vec<(Node, usize)> {
     res.push((
         Node {
             cell: node.cell,
-            direction: turn_left(&node.direction),
+            direction: turn_left(node.direction),
         },
         1000usize,
     ));
     res.push((
         Node {
             cell: node.cell,
-            direction: turn_right(&node.direction),
+            direction: turn_right(node.direction),
         },
         1000usize,
     ));
 
-    // println!("Successors for {:?} {:?}", node.cell, node.direction);
-    // println!("{:?}", res);
-
     res
 }
 
-fn turn_left(dir: &Direction) -> Direction {
+const fn turn_left(dir: Direction) -> Direction {
     match dir {
         Direction::East => Direction::North,
         Direction::South => Direction::East,
@@ -125,7 +164,7 @@ fn turn_left(dir: &Direction) -> Direction {
     }
 }
 
-fn turn_right(dir: &Direction) -> Direction {
+const fn turn_right(dir: Direction) -> Direction {
     match dir {
         Direction::East => Direction::South,
         Direction::South => Direction::West,
