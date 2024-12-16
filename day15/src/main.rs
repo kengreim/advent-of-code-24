@@ -1,14 +1,13 @@
 #![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 
 use grid::Grid;
-use std::cmp::min;
 use utils::GridExt;
 
 type WideCell = (usize, (usize, usize));
 
 fn main() {
-    const PATH: &str = "day15/src/day15_test.txt";
-    //part1(PATH);
+    const PATH: &str = "day15/src/day15_test2.txt";
+    part1(PATH);
     part2(PATH);
 }
 
@@ -43,29 +42,7 @@ fn part1(path: &str) {
 }
 
 fn part2(path: &str) {
-    //let input = std::fs::read_to_string(path).unwrap();
-    let input = r#"
-##########
-#..O..O.O#
-#......O.#
-#.OO..O.O#
-#..O@..O.#
-#O#..O...#
-#O..O..O.#
-#.OO.O.OO#
-#....O...#
-##########
-
-<vv>^<v^>v>^vv^v>v<>v^v<v<^vv<<<^><<><>>v<vvv<>^v^>^<<<><<v<<<v^vv^v>^
-vvv<<^>^v^^><<>>><>^<<><^vv^^<>vvv<>><^^v>^>vv<>v<<<<v<^v>^<^^>>>^<v<v
-><>vv>v^v^<>><>>>><^^>vv>v<^^^>>v^v^<^^>v^^>v^<^v>v<>>v^v^<v>v^^<^^vv<
-<<v<^>>^^^^>>>v^<>vvv^><v<<<>^^^vv^<vvv>^>v<^^^^v<>^>vvvv><>>v^<<^^^^^
-^><^><>>><>^^<<^^v>>><^<v>^<vv>>v>>>^v><>^v><<<<v>>v<v<v>vvv>^<><<>^><
-^>><>^v<><^vvv<^^<><v<<<<<><^v<<<><<<^^<v<^^^><^>>^<v^><<<^>>^v<v^v<v^
->^>>^v>vv>^<<^v<>><<><<v<<v><>v<^vv<<<>^^v^>^^>>><<^v>>v^v><^^>>^<>vv^
-<><^^>^^^<><vvvvv^v<v<<>^v<v>v<<^><<><<><<<^^<<<^<<>><<><^^^>^^<>^>v<>
-^^>vv<^v^v<vv>^<><v<^v>^^^>>>^^vvv^>vvv<>>>^<^>>>>>^<<^v>^vvv<>^<><<v>
-v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^"#;
+    let input = std::fs::read_to_string(path).unwrap();
 
     let (original_grid, _) = parse_grid(&input).unwrap();
     let (mut grid, mut pos) = widen_grid(&original_grid);
@@ -142,7 +119,7 @@ v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^"#;
                             let offset_row = if is_increasing_row { row + 1 } else { row - 1 };
 
                             //grid.print();
-                            //println!("writing {offset_row} {c1} {c2} to {row} {c1} {c2}");
+                            println!("writing {offset_row} {c1} {c2} to {row} {c1} {c2}");
                             grid[(offset_row, c1)] = grid[(row, c1)];
                             grid[(offset_row, c2)] = grid[(row, c2)];
 
@@ -182,16 +159,16 @@ v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^"#;
                         // }
 
                         grid[next_cell] = '@';
-                        if left_aligned {
-                            grid[(next_row, next_col + 1)] = '.';
-                        } else {
-                            grid[(next_row, next_col - 1)] = '.';
-                        }
+                        // if left_aligned {
+                        //     grid[(next_row, next_col + 1)] = '.';
+                        // } else {
+                        //     grid[(next_row, next_col - 1)] = '.';
+                        // }
                         grid[pos] = '.';
                         pos = next_cell;
                     }
                     //test_grid.print();
-                    println!("Move {m}");
+                    //println!("Move {m}");
                     //grid.print();
                 }
                 _ => panic!(),
@@ -202,12 +179,35 @@ v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^"#;
         #[cfg(debug_assertions)]
         grid.print();
     }
+
+    grid.print();
+    println!("{}", score_wide_grid(&grid));
 }
 
 fn score_grid(grid: &Grid<char>) -> usize {
     grid.indexed_iter()
         .map(|((row, col), c)| if *c == 'O' { 100 * row + col } else { 0 })
         .sum()
+}
+
+fn score_wide_grid(grid: &Grid<char>) -> usize {
+    // grid.indexed_iter()
+    //     .map(|((row, col), c)| if *c == '[' { 100 * row + col } else { 0 })
+    //     .sum()
+    let x = grid
+        .indexed_iter()
+        .map(|((row, col), c)| {
+            if *c == '[' {
+                100 * row + col
+                //100 * row + min(col, grid.cols() - col + 1)
+            } else {
+                0
+            }
+        })
+        .filter(|x| *x > 0)
+        .collect::<Vec<usize>>();
+    println!("{}", x.len());
+    x.iter().sum()
 }
 
 fn move_to_delta(move_char: char) -> (isize, isize) {
@@ -281,7 +281,7 @@ fn next_free_wide(
 
         println!("Original Frontier {:?}", new_frontier);
         for (_, (col1, col2)) in frontier_row {
-            //println!("{next_row} {col1} {col2}");
+            println!("{next_row} {col1} {col2}");
             if *grid.get(next_row, col1).unwrap() == ']' {
                 new_frontier.push((next_row, (col1 - 1, col1)));
                 println!("frontier left");

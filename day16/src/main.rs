@@ -20,8 +20,6 @@ enum Direction {
 struct Node {
     pub cell: Cell,
     pub direction: Direction,
-    //pub cost: usize,
-    //pub visited: bool,
 }
 
 // impl Node {
@@ -44,10 +42,10 @@ struct Node {
 fn main() {
     const PATH: &str = "day16/src/day16_input.txt";
     let shortest_cost = part1(PATH);
-
     println!("{shortest_cost}");
 
-    part2(PATH);
+    let unique_cells = part2(PATH);
+    println!("{unique_cells}");
 }
 
 fn part1(path: &str) -> usize {
@@ -69,7 +67,7 @@ fn part1(path: &str) -> usize {
     result.unwrap().1
 }
 
-fn part2(path: &str) {
+fn part2(path: &str) -> usize {
     let input = std::fs::read_to_string(path).unwrap();
     let grid = Grid::parse_from_str(&input, |l| l.trim().chars().collect::<Vec<char>>()).unwrap();
 
@@ -83,7 +81,7 @@ fn part2(path: &str) {
     let paths = astar_bag_collect(
         &start_node,
         |n| successors(&grid, n),
-        |n| end_cell.0.abs_diff(n.cell.0) + end_cell.1.abs_diff(n.cell.1),
+        |n| grid.taxicab_distance(n.cell, end_cell).unwrap(),
         |n| n.cell == end_cell,
     );
 
@@ -95,7 +93,7 @@ fn part2(path: &str) {
         .map(|p| p.cell)
         .collect::<HashSet<_>>();
 
-    println!("{}", all_cells.len());
+    all_cells.len()
 }
 
 fn find_start_and_end(grid: &Grid<char>) -> Option<(Cell, Cell)> {
