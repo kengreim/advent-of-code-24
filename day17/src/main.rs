@@ -31,22 +31,89 @@ fn part2(path: &str) {
     let input = fs::read_to_string(&path).unwrap();
     let (program, (_, register_b, register_c)) = parse_program(&input);
 
-    let mut register_a = 0;
     let start = Instant::now();
-    loop {
-        if register_a % 100_000_000 == 0 {
-            println!("Trying {}: {:?}", register_a, start.elapsed());
+    let mut stop_count = 7;
+    let mut register_a = 0;
+
+    for i in 0..=(u32::max as u64) {
+        if i % 100_000_000 == 0 {
+            println!("Trying {}: {:?}", i, start.elapsed());
         }
 
-        if let Some(output) = quine_search(&program, (register_a, register_b, register_c)) {
-            //let output = execute_program(&program, (register_a, register_b, register_c));
+        let shift = i << 16;
+        register_a = shift | 15375;
+        if let Some(output) = quine_search(&program, (register_a, register_b, register_c), Some(16))
+        {
+            println!("{:?}", output);
+            break;
             if output == program {
                 println!("{register_a}");
                 break;
             }
         }
-        register_a += 1;
     }
+
+    // loop {
+    //     println!("Trying with stop count {stop_count}");
+    //     register_a = 0;
+    //
+    //     for register_a in 8_u64.pow((stop_count - 1) as u32)..8_u64.pow(stop_count as u32) {
+    //         if let Some(output) = quine_search(
+    //             &program,
+    //             (register_a, register_b, register_c),
+    //             Some(stop_count),
+    //         ) {
+    //             //let output = execute_program(&program, (register_a, register_b, register_c));
+    //             // if output == program {
+    //             //     println!("{register_a}");
+    //             //     break;
+    //             // }
+    //             println!("{:?}", output);
+    //
+    //             break;
+    //         }
+    //     }
+    //     stop_count += 1;
+    // }
+
+    // loop {
+    //     println!("Trying with stop count {stop_count}");
+    //     register_a = 0;
+    //
+    //     for register_a in 8_u64.pow(stop_count - 1)..8_u64.pow(stop_count) {
+    //         if let Some(output) = quine_search(
+    //             &program,
+    //             (register_a, register_b, register_c),
+    //             Some(stop_count as usize),
+    //         ) {
+    //             //let output = execute_program(&program, (register_a, register_b, register_c));
+    //             // if output == program {
+    //             //     println!("{register_a}");
+    //             //     break;
+    //             // }
+    //             println!("{:?}", output);
+    //
+    //             break;
+    //         }
+    //     }
+    //     stop_count += 1;
+    // }
+
+    // 'outer: loop {
+    //     if register_a % 100_000_000 == 0 {
+    //         println!("Trying {}: {:?}", register_a, start.elapsed());
+    //     }
+    //
+    //     if let Some(output) = quine_search(&program, (register_a, register_b, register_c), Some(1))
+    //     {
+    //         //let output = execute_program(&program, (register_a, register_b, register_c));
+    //         if output == program {
+    //             println!("{register_a}");
+    //         }
+    //         break 'outer;
+    //     }
+    //     register_a += 1;
+    // }
 }
 
 fn part1(path: &str) {
@@ -169,11 +236,17 @@ fn execute_program(program: &[u64], registers: (u64, u64, u64)) -> Vec<u64> {
     output
 }
 
-fn quine_search(program: &[u64], registers: (u64, u64, u64)) -> Option<Vec<u64>> {
+fn quine_search(
+    program: &[u64],
+    registers: (u64, u64, u64),
+    output_index_stop: Option<usize>,
+) -> Option<Vec<u64>> {
     let (mut register_a, mut register_b, mut register_c) = registers;
     let register_a_start = register_a;
     let mut output = vec![];
     let mut output_idx = 0usize;
+
+    let output_index_stop_int = output_index_stop.unwrap_or(usize::MAX);
 
     let mut i_pointer = 0;
     while i_pointer < program.len() {
@@ -220,11 +293,14 @@ fn quine_search(program: &[u64], registers: (u64, u64, u64)) -> Option<Vec<u64>>
                 if program[output_idx] != new_output {
                     return None;
                 }
-                if output_idx > 8 {
-                    println!("{register_a_start} {:?} {:?}", program, output);
-                }
+
                 output_idx += 1;
                 i_pointer += 2;
+
+                if output_idx >= output_index_stop_int {
+                    println!("Lowest Register A to get {output_index_stop_int} outputs correct is {register_a_start} {:?} {:?}", program, output);
+                    return Some(output);
+                }
             }
             6 => {
                 let numerator = register_a;
@@ -248,7 +324,11 @@ fn quine_search(program: &[u64], registers: (u64, u64, u64)) -> Option<Vec<u64>>
         }
     }
 
-    Some(output)
+    if output_idx < output_index_stop_int {
+        None
+    } else {
+        Some(output)
+    }
 }
 
 #[inline(always)]
