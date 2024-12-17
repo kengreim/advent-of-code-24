@@ -39,6 +39,7 @@ fn part2(path: &str) {
         }
 
         if let Some(output) = quine_search(&program, (register_a, register_b, register_c)) {
+            //let output = execute_program(&program, (register_a, register_b, register_c));
             if output == program {
                 println!("{register_a}");
                 break;
@@ -121,7 +122,7 @@ fn execute_program(program: &[u64], registers: (u64, u64, u64)) -> Vec<u64> {
                 i_pointer += 2;
             }
             2 => {
-                let new = get_combo_operand_val(operand, (register_a, register_b, register_c)) % 8;
+                let new = get_combo_operand_val(operand, (register_a, register_b, register_c)) & 7;
                 register_b = new;
                 i_pointer += 2;
             }
@@ -139,7 +140,7 @@ fn execute_program(program: &[u64], registers: (u64, u64, u64)) -> Vec<u64> {
             }
             5 => {
                 let new_output =
-                    get_combo_operand_val(operand, (register_a, register_b, register_c)) % 8;
+                    get_combo_operand_val(operand, (register_a, register_b, register_c)) & 7;
                 output.push(new_output);
                 i_pointer += 2;
             }
@@ -148,7 +149,7 @@ fn execute_program(program: &[u64], registers: (u64, u64, u64)) -> Vec<u64> {
                 let denominator = 2_u64
                     .pow(
                         get_combo_operand_val(operand, (register_a, register_b, register_c)) as u32,
-                    ) as u64;
+                    );
                 register_b = numerator / denominator;
                 i_pointer += 2;
             }
@@ -195,7 +196,7 @@ fn quine_search(program: &[u64], registers: (u64, u64, u64)) -> Option<Vec<u64>>
                 i_pointer += 2;
             }
             2 => {
-                let new = get_combo_operand_val(operand, (register_a, register_b, register_c)) % 8;
+                let new = get_combo_operand_val(operand, (register_a, register_b, register_c)) & 7;
                 register_b = new;
                 i_pointer += 2;
             }
@@ -213,7 +214,7 @@ fn quine_search(program: &[u64], registers: (u64, u64, u64)) -> Option<Vec<u64>>
             }
             5 => {
                 let new_output =
-                    get_combo_operand_val(operand, (register_a, register_b, register_c)) % 8;
+                    get_combo_operand_val(operand, (register_a, register_b, register_c)) & 7;
                 output.push(new_output);
 
                 if program[output_idx] != new_output {
