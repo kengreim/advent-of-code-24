@@ -15,14 +15,6 @@ static PROGRAM_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"Program: (.+)
 fn main() {
     const PATH: &str = "day17/src/day17_input.txt";
 
-    // let mut a: u64 = 0;
-    // loop {
-    //     if ((((a % 8) ^ 2) ^ (a / 2_u64.pow((a % 8) ^ 2))) ^ 7) % 8 == 4 {
-    //         println!("{a}")
-    //     }
-    //     a += 1;
-    // }
-
     //part1(PATH);
     part2(PATH);
 }
@@ -32,7 +24,6 @@ fn part2(path: &str) {
     let (program, (_, register_b, register_c)) = parse_program(&input);
 
     let start = Instant::now();
-    let mut stop_count = 7;
     let mut register_a = 0;
 
     for i in 0..=(u32::max as u64) {
@@ -40,80 +31,12 @@ fn part2(path: &str) {
             println!("Trying {}: {:?}", i, start.elapsed());
         }
 
-        let shift = i << 16;
-        register_a = shift | 15375;
+        register_a = (i << 16) | 15375;
         if let Some(output) = quine_search(&program, (register_a, register_b, register_c), Some(16))
         {
-            println!("{:?}", output);
             break;
-            if output == program {
-                println!("{register_a}");
-                break;
-            }
         }
     }
-
-    // loop {
-    //     println!("Trying with stop count {stop_count}");
-    //     register_a = 0;
-    //
-    //     for register_a in 8_u64.pow((stop_count - 1) as u32)..8_u64.pow(stop_count as u32) {
-    //         if let Some(output) = quine_search(
-    //             &program,
-    //             (register_a, register_b, register_c),
-    //             Some(stop_count),
-    //         ) {
-    //             //let output = execute_program(&program, (register_a, register_b, register_c));
-    //             // if output == program {
-    //             //     println!("{register_a}");
-    //             //     break;
-    //             // }
-    //             println!("{:?}", output);
-    //
-    //             break;
-    //         }
-    //     }
-    //     stop_count += 1;
-    // }
-
-    // loop {
-    //     println!("Trying with stop count {stop_count}");
-    //     register_a = 0;
-    //
-    //     for register_a in 8_u64.pow(stop_count - 1)..8_u64.pow(stop_count) {
-    //         if let Some(output) = quine_search(
-    //             &program,
-    //             (register_a, register_b, register_c),
-    //             Some(stop_count as usize),
-    //         ) {
-    //             //let output = execute_program(&program, (register_a, register_b, register_c));
-    //             // if output == program {
-    //             //     println!("{register_a}");
-    //             //     break;
-    //             // }
-    //             println!("{:?}", output);
-    //
-    //             break;
-    //         }
-    //     }
-    //     stop_count += 1;
-    // }
-
-    // 'outer: loop {
-    //     if register_a % 100_000_000 == 0 {
-    //         println!("Trying {}: {:?}", register_a, start.elapsed());
-    //     }
-    //
-    //     if let Some(output) = quine_search(&program, (register_a, register_b, register_c), Some(1))
-    //     {
-    //         //let output = execute_program(&program, (register_a, register_b, register_c));
-    //         if output == program {
-    //             println!("{register_a}");
-    //         }
-    //         break 'outer;
-    //     }
-    //     register_a += 1;
-    // }
 }
 
 fn part1(path: &str) {
