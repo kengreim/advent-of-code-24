@@ -3,12 +3,8 @@ use std::fs;
 use std::sync::LazyLock;
 use std::time::Instant;
 
-static REGISTER_A_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"Register A: (-?\d+)").unwrap());
-static REGISTER_B_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"Register B: (-?\d+)").unwrap());
-static REGISTER_C_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"Register C: (-?\d+)").unwrap());
+static REGISTER_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"Register \w: (-?\d+)").unwrap());
 
 static PROGRAM_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"Program: (.+)").unwrap());
 
@@ -21,13 +17,14 @@ fn main() {
 
 fn part2(path: &str) {
     let input = fs::read_to_string(&path).unwrap();
+
     let (program, (_, register_b, register_c)) = parse_program(&input);
 
     let start = Instant::now();
     let mut register_a = 0;
 
     for i in 0..=(u32::max as u64) {
-        if i % 100_000_000 == 0 {
+        if i > 0 && i % 100_000_000 == 0 {
             println!("Trying {}: {:?}", i, start.elapsed());
         }
 
@@ -50,30 +47,10 @@ fn part1(path: &str) {
 }
 
 fn parse_program(input: &str) -> (Vec<u64>, (u64, u64, u64)) {
-    let register_a: u64 = REGISTER_A_RE
-        .captures(&input)
-        .unwrap()
-        .get(1)
-        .unwrap()
-        .as_str()
-        .parse()
-        .unwrap();
-    let register_b: u64 = REGISTER_B_RE
-        .captures(&input)
-        .unwrap()
-        .get(1)
-        .unwrap()
-        .as_str()
-        .parse()
-        .unwrap();
-    let register_c: u64 = REGISTER_C_RE
-        .captures(&input)
-        .unwrap()
-        .get(1)
-        .unwrap()
-        .as_str()
-        .parse()
-        .unwrap();
+    let registers = REGISTER_RE
+        .captures_iter(&input)
+        .map(|c| c.get(1).unwrap().as_str().parse::<u64>().unwrap())
+        .collect::<Vec<_>>();
 
     let program_captures = PROGRAM_RE.captures(&input).unwrap();
     let program = program_captures
@@ -84,7 +61,7 @@ fn parse_program(input: &str) -> (Vec<u64>, (u64, u64, u64)) {
         .map(|s| s.parse::<u64>().unwrap())
         .collect::<Vec<_>>();
 
-    (program, (register_a, register_b, register_c))
+    (program, (registers[0], registers[1], registers[2]))
 }
 
 fn execute_program(program: &[u64], registers: (u64, u64, u64)) -> Vec<u64> {
@@ -173,11 +150,9 @@ fn quine_search(
 
     let mut i_pointer = 0;
     while i_pointer < program.len() {
-        let opcode = program[i_pointer];
-        let operand = program[i_pointer + 1];
-
-        match opcode {
+        match program[i_pointer] {
             0 => {
+                let operand = program[i_pointer + 1];
                 let numerator = register_a;
                 let denominator = 2_u64
                     .pow(
@@ -187,16 +162,19 @@ fn quine_search(
                 i_pointer += 2;
             }
             1 => {
+                let operand = program[i_pointer + 1];
                 let new = register_b ^ operand;
                 register_b = new;
                 i_pointer += 2;
             }
             2 => {
+                let operand = program[i_pointer + 1];
                 let new = get_combo_operand_val(operand, (register_a, register_b, register_c)) & 7;
                 register_b = new;
                 i_pointer += 2;
             }
             3 => {
+                let operand = program[i_pointer + 1];
                 if register_a != 0 {
                     i_pointer = operand as usize;
                 } else {
@@ -209,6 +187,7 @@ fn quine_search(
                 i_pointer += 2;
             }
             5 => {
+                let operand = program[i_pointer + 1];
                 let new_output =
                     get_combo_operand_val(operand, (register_a, register_b, register_c)) & 7;
                 output.push(new_output);
@@ -226,6 +205,7 @@ fn quine_search(
                 }
             }
             6 => {
+                let operand = program[i_pointer + 1];
                 let numerator = register_a;
                 let denominator = 2_u64
                     .pow(
@@ -235,6 +215,7 @@ fn quine_search(
                 i_pointer += 2;
             }
             7 => {
+                let operand = program[i_pointer + 1];
                 let numerator = register_a;
                 let denominator = 2_u64
                     .pow(
@@ -255,12 +236,12 @@ fn quine_search(
 }
 
 #[inline(always)]
-fn get_combo_operand_val(operand: u64, registers: (u64, u64, u64)) -> u64 {
+fn get_combo_operand_val(operand: u64, (a, b, c): (u64, u64, u64)) -> u64 {
     match operand {
         0 | 1 | 2 | 3 => operand,
-        4 => registers.0,
-        5 => registers.1,
-        6 => registers.2,
+        4 => a,
+        5 => b,
+        6 => c,
         _ => panic!("Unknown combo operand {operand}"),
     }
 }
