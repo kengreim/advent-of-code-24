@@ -33,23 +33,32 @@ fn part1(path: &str) {
 
 fn part2(path: &str) {
     let input = fs::read_to_string(path).unwrap();
-    let fallen_all = input.lines().filter_map(|x| split_line(x));
+    let fallen_all = input
+        .lines()
+        .filter_map(|x| split_line(x))
+        .collect::<Vec<_>>();
+    let mut fallen_set = fallen_all
+        .iter()
+        .copied()
+        .collect::<FxHashSet<(u32, u32)>>();
 
-    let mut i = fallen_all.clone().count(); // Search backward
-    let max_row = 71;
-    let max_col = 71;
+    let mut i = fallen_all.len(); // Search backward
+    let (max_row, max_col) = (71, 71);
     loop {
+        if i < fallen_all.len() {
+            fallen_set.remove(&fallen_all[i]);
+        }
+
         #[cfg(debug_assertions)]
         println!("Trying byte number {i}");
 
-        let fallen = fallen_all.clone().take(i).collect::<FxHashSet<_>>();
         if let Some(_) = astar(
             &(0, 0),
-            |(r, c)| successors((*r, *c), (max_row, max_col), &fallen),
-            |(r, c)| r.abs_diff(max_row) + c.abs_diff(max_col),
-            |(r, c)| *r == max_col - 1 && *c == max_col - 1,
+            |&(r, c)| successors((r, c), (max_row, max_col), &fallen_set),
+            |&(r, c)| r.abs_diff(max_row) + c.abs_diff(max_col),
+            |&(r, c)| r == max_col - 1 && c == max_col - 1,
         ) {
-            println!("{:?}", fallen_all.clone().collect::<Vec<_>>()[i]);
+            println!("{:?}", fallen_all[i]);
             break;
         }
 
