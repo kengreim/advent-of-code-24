@@ -41,9 +41,10 @@ fn part2(path: &str) {
         .copied()
         .collect::<FxHashSet<(u32, u32)>>();
 
-    let mut i = fallen_all.len(); // Search backward
     let (max_row, max_col) = (71, 71);
-    loop {
+
+    // Search backwards, removing "byte" obstacles from the set used by successors func as we go
+    for i in (0..fallen_all.len()).rev() {
         if i < fallen_all.len() {
             fallen_set.remove(&fallen_all[i]);
         }
@@ -62,8 +63,6 @@ fn part2(path: &str) {
             println!("{:?}", fallen_all[i]);
             break;
         }
-
-        i -= 1;
     }
 }
 
