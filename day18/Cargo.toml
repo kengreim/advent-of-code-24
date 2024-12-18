@@ -1,0 +1,9 @@
+[package]
+name = "day18"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+grid = { workspace = true }
+grid_util = "0.1.1"
+pathfinding = "4.12.0"

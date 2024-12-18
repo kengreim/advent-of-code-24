@@ -136,6 +136,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "day18"
+version = "0.1.0"
+dependencies = [
+ "grid",
+ "grid_util",
+ "pathfinding",
+]
+
+[[package]]
 name = "day2"
 version = "0.1.0"
 
