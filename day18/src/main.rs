@@ -1,11 +1,15 @@
 use pathfinding::prelude::astar;
 use std::collections::HashSet;
 use std::fs;
+use std::time::Instant;
 
 fn main() {
     const PATH: &str = "day18/src/day18_input.txt";
 
-    part1(PATH);
+    //part1(PATH);
+    let start = Instant::now();
+    part2(PATH);
+    println!("{:?}", start.elapsed());
 }
 
 fn part1(path: &str) {
@@ -27,6 +31,32 @@ fn part1(path: &str) {
     println!("{}", x.unwrap().0.len() - 1)
 }
 
+fn part2(path: &str) {
+    let input = fs::read_to_string(path).unwrap();
+    let fallen_all = input.lines().filter_map(|x| split_line(x));
+
+    let mut i = fallen_all.clone().count(); // Search backward
+    let max_row = 71;
+    let max_col = 71;
+    loop {
+        #[cfg(debug_assertions)]
+        println!("Trying byte number {i}");
+
+        let fallen = fallen_all.clone().take(i).collect::<HashSet<_>>();
+        if let Some(_) = astar(
+            &(0, 0),
+            |(r, c)| successors((*r, *c), (max_row, max_col), &fallen),
+            |(r, c)| r.abs_diff(max_row) + c.abs_diff(max_col),
+            |(r, c)| *r == max_col - 1 && *c == max_col - 1,
+        ) {
+            println!("{:?}", fallen_all.clone().collect::<Vec<_>>()[i]);
+            break;
+        }
+
+        i -= 1;
+    }
+}
+
 fn successors(
     (r, c): (u32, u32),
     (max_r, max_c): (u32, u32),
@@ -39,11 +69,9 @@ fn successors(
     if c > 0 && !fallen_bytes.contains(&(r, c - 1)) {
         result.push(((r, c - 1), 1));
     }
-
     if r + 1 < max_r && !fallen_bytes.contains(&(r + 1, c)) {
         result.push(((r + 1, c), 1));
     }
-
     if c + 1 < max_c && !fallen_bytes.contains(&(r, c + 1)) {
         result.push(((r, c + 1), 1));
     }
