@@ -1,3 +1,5 @@
+#![warn(clippy::all, clippy::pedantic, clippy::nursery)]
+
 use regex::Regex;
 use std::fs;
 use std::sync::LazyLock;
@@ -16,48 +18,51 @@ fn main() {
 }
 
 fn part2(path: &str) {
-    let input = fs::read_to_string(&path).unwrap();
-
+    let input = fs::read_to_string(path).unwrap();
     let (program, (_, register_b, register_c)) = parse_program(&input);
 
     let start = Instant::now();
     let mut register_a = 0;
-
-    for i in 0..=(u32::max as u64) {
-        if i > 0 && i % 100_000_000 == 0 {
-            println!("Trying {}: {:?}", i, start.elapsed());
+    let program_match_len = 16;
+    let search_start = 2_u64.pow(program_match_len * 3 - 16 - 2);
+    for (iter, i) in (search_start..=(u32::max as u64)).enumerate() {
+        if iter > 0 && iter % 100_000_000 == 0 {
+            println!("Trying {}: {:?}", iter, start.elapsed());
         }
 
         register_a = (i << 16) | 15375;
-        if let Some(output) = quine_search(&program, (register_a, register_b, register_c), Some(16))
-        {
+        if let Some(_) = quine_search(
+            &program,
+            (register_a, register_b, register_c),
+            Some(program_match_len as usize),
+        ) {
             break;
         }
     }
 }
 
 fn part1(path: &str) {
-    let input = fs::read_to_string(&path).unwrap();
+    let input = fs::read_to_string(path).unwrap();
     let (program, registers) = parse_program(&input);
     let output = execute_program(&program, registers)
         .iter()
-        .map(|n| n.to_string())
+        .map(ToString::to_string)
         .collect::<Vec<_>>();
     println!("{}", output.join(","));
 }
 
 fn parse_program(input: &str) -> (Vec<u64>, (u64, u64, u64)) {
     let registers = REGISTER_RE
-        .captures_iter(&input)
+        .captures_iter(input)
         .map(|c| c.get(1).unwrap().as_str().parse::<u64>().unwrap())
         .collect::<Vec<_>>();
 
-    let program_captures = PROGRAM_RE.captures(&input).unwrap();
+    let program_captures = PROGRAM_RE.captures(input).unwrap();
     let program = program_captures
         .get(1)
         .unwrap()
         .as_str()
-        .split(",")
+        .split(',')
         .map(|s| s.parse::<u64>().unwrap())
         .collect::<Vec<_>>();
 
@@ -200,7 +205,7 @@ fn quine_search(
                 i_pointer += 2;
 
                 if output_idx >= output_index_stop_int {
-                    println!("Lowest Register A to get {output_index_stop_int} outputs correct is {register_a_start} {:?} {:?}", program, output);
+                    println!("Lowest Register A to get {output_index_stop_int} outputs correct is {register_a_start} {program:?} {output:?}");
                     return Some(output);
                 }
             }
@@ -224,7 +229,7 @@ fn quine_search(
                 register_c = numerator / denominator;
                 i_pointer += 2;
             }
-            _ => panic!("Unknown opcode {opcode}"),
+            _ => panic!("Unknown opcode {}", program[i_pointer]),
         }
     }
 
@@ -238,7 +243,7 @@ fn quine_search(
 #[inline(always)]
 fn get_combo_operand_val(operand: u64, (a, b, c): (u64, u64, u64)) -> u64 {
     match operand {
-        0 | 1 | 2 | 3 => operand,
+        0..=3 => operand,
         4 => a,
         5 => b,
         6 => c,
