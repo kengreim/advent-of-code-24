@@ -1,5 +1,5 @@
 use pathfinding::prelude::astar;
-use std::collections::HashSet;
+use rustc_hash::FxHashSet;
 use std::fs;
 use std::time::Instant;
 
@@ -16,7 +16,7 @@ fn part1(path: &str) {
     let input = fs::read_to_string(path).unwrap();
     let fallen_all = input.lines().filter_map(|x| split_line(x));
 
-    let fallen = fallen_all.take(1024).collect::<HashSet<_>>();
+    let fallen = fallen_all.take(1024).collect::<FxHashSet<_>>();
 
     let max_row = 71;
     let max_col = 71;
@@ -42,7 +42,7 @@ fn part2(path: &str) {
         #[cfg(debug_assertions)]
         println!("Trying byte number {i}");
 
-        let fallen = fallen_all.clone().take(i).collect::<HashSet<_>>();
+        let fallen = fallen_all.clone().take(i).collect::<FxHashSet<_>>();
         if let Some(_) = astar(
             &(0, 0),
             |(r, c)| successors((*r, *c), (max_row, max_col), &fallen),
@@ -60,7 +60,7 @@ fn part2(path: &str) {
 fn successors(
     (r, c): (u32, u32),
     (max_r, max_c): (u32, u32),
-    fallen_bytes: &HashSet<(u32, u32)>,
+    fallen_bytes: &FxHashSet<(u32, u32)>,
 ) -> Vec<((u32, u32), u32)> {
     let mut result = Vec::new();
     if r > 0 && !fallen_bytes.contains(&(r - 1, c)) {
