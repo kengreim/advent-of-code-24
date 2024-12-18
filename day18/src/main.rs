@@ -1,3 +1,5 @@
+#![warn(clippy::all, clippy::pedantic, clippy::nursery)]
+
 use pathfinding::prelude::astar;
 use rustc_hash::FxHashSet;
 use std::fs;
@@ -14,7 +16,7 @@ fn main() {
 
 fn part1(path: &str) {
     let input = fs::read_to_string(path).unwrap();
-    let fallen_all = input.lines().filter_map(|x| split_line(x));
+    let fallen_all = input.lines().filter_map(split_line);
 
     let fallen = fallen_all.take(1024).collect::<FxHashSet<_>>();
 
@@ -28,15 +30,12 @@ fn part1(path: &str) {
         |(r, c)| *r == max_col - 1 && *c == max_col - 1,
     );
 
-    println!("{}", x.unwrap().0.len() - 1)
+    println!("{}", x.unwrap().1);
 }
 
 fn part2(path: &str) {
     let input = fs::read_to_string(path).unwrap();
-    let fallen_all = input
-        .lines()
-        .filter_map(|x| split_line(x))
-        .collect::<Vec<_>>();
+    let fallen_all = input.lines().filter_map(split_line).collect::<Vec<_>>();
     let mut fallen_set = fallen_all
         .iter()
         .copied()
@@ -52,12 +51,14 @@ fn part2(path: &str) {
         #[cfg(debug_assertions)]
         println!("Trying byte number {i}");
 
-        if let Some(_) = astar(
+        if astar(
             &(0, 0),
             |&(r, c)| successors((r, c), (max_row, max_col), &fallen_set),
             |&(r, c)| r.abs_diff(max_row) + c.abs_diff(max_col),
             |&(r, c)| r == max_col - 1 && c == max_col - 1,
-        ) {
+        )
+        .is_some()
+        {
             println!("{:?}", fallen_all[i]);
             break;
         }
