@@ -2,7 +2,7 @@
 
 use rustc_hash::FxHashMap;
 use std::fs;
-use std::sync::{Arc, RwLock};
+use std::sync::RwLock;
 
 fn main() {
     const PATH: &str = "day19/src/day19_input.txt";
@@ -21,23 +21,22 @@ fn part1(path: &str) {
         .collect::<Vec<_>>();
     let designs = &lines[2..];
 
-    let designs_memo = Arc::new(RwLock::new(
+    let designs_memo = RwLock::new(
         towels
             .iter()
             .map(|&s| (s.to_owned(), true))
             .collect::<FxHashMap<String, bool>>(),
-    ));
+    );
 
     let sum = designs
         .iter()
-        .map(|&d| can_build_design(d, &designs_memo))
-        .filter(|b| *b)
-        .count();
+        .map(|&d| can_build_design(d, &designs_memo) as u32)
+        .sum::<u32>();
 
     println!("{sum}");
 }
 
-fn can_build_design(design: &str, designs_memo: &Arc<RwLock<FxHashMap<String, bool>>>) -> bool {
+fn can_build_design(design: &str, designs_memo: &RwLock<FxHashMap<String, bool>>) -> bool {
     let previous_res = designs_memo.read().unwrap().get(design).copied();
     previous_res.map_or_else(
         || {
