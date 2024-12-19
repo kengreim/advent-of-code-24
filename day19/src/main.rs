@@ -7,8 +7,9 @@ use std::time::Instant;
 
 fn main() {
     const PATH: &str = "day19/src/day19_input.txt";
-    //part1(PATH);
+
     let start = Instant::now();
+    //part1(PATH);
     part2(PATH);
     println!("{:?}", start.elapsed());
 }
@@ -24,7 +25,7 @@ fn part1(path: &str) {
 
     let sum = designs
         .iter()
-        .map(|&d| can_build_design(d, &mut designs_memo) as u32)
+        .map(|&d| u32::from(can_build_design(d, &mut designs_memo)))
         .sum::<u32>();
 
     println!("{sum}");
@@ -46,7 +47,7 @@ fn part2(path: &str) {
         })
         .collect::<Vec<(&str, u64)>>();
 
-    let sum = answers.iter().map(|&(s, n)| n).sum::<u64>();
+    let sum = answers.iter().map(|&(_, n)| n).sum::<u64>();
 
     //println!("{answers:?}");
     println!("{sum}");
@@ -56,8 +57,14 @@ fn can_build_design(design: &str, designs_memo: &mut FxHashMap<String, bool>) ->
     let previous_res = designs_memo.get(design).copied();
     previous_res.map_or_else(
         || {
-            let candidates = designs_memo
-                .keys()
+            let mut keys = designs_memo
+                .iter()
+                .filter_map(|(k, &v)| if v { Some(k) } else { None })
+                .collect::<Vec<_>>();
+            keys.sort_by_key(|b| std::cmp::Reverse(b.len()));
+
+            let candidates = keys
+                .into_iter()
                 .filter_map(|s| {
                     if design.ends_with(s.as_str()) {
                         let new_len = design.len() - s.len();
@@ -94,7 +101,7 @@ fn num_ways_build_design(
                 let new_towels = original_towels
                     .iter()
                     .filter(|s| **s != design)
-                    .cloned()
+                    .copied()
                     .collect::<Vec<_>>();
 
                 let res =
@@ -104,7 +111,7 @@ fn num_ways_build_design(
                 return Some(res);
             }
 
-            if design == "" {
+            if design.is_empty() {
                 return Some(1);
             }
 
@@ -149,7 +156,7 @@ fn num_ways_build_design(
 }
 
 fn num_ways_build_design_no_memo(design: &str, original_towels: &[&str]) -> Option<u64> {
-    if design == "" {
+    if design.is_empty() {
         return Some(1);
     }
 
