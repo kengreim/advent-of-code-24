@@ -34,23 +34,25 @@ fn part1(path: &str) {
 fn part2(path: &str) {
     let input = fs::read_to_string(path).unwrap();
     let (towels, designs) = parse_input(&input);
-    //let designs_memo = RwLock::new(towels.iter().map(|&s| (s.to_owned(), 0)).collect());
 
     let mut designs_memo = FxHashMap::default();
-    let answers = designs
+    let sum = designs
         .iter()
-        .map(|&d| {
-            (
-                d,
-                num_ways_build_design(d, &towels, &mut designs_memo).unwrap_or_default(),
-            )
-        })
-        .collect::<Vec<(&str, u64)>>();
-
-    let sum = answers.iter().map(|&(_, n)| n).sum::<u64>();
-
-    //println!("{answers:?}");
+        .map(|&d| num_ways_build_design(d, &towels, &mut designs_memo).unwrap_or_default())
+        .sum::<u64>();
     println!("{sum}");
+
+    // let answers = designs
+    //     .iter()
+    //     .map(|&d| {
+    //         (
+    //             d,
+    //             num_ways_build_design(d, &towels, &mut designs_memo).unwrap_or_default(),
+    //         )
+    //     })
+    //     .collect::<Vec<(&str, u64)>>();
+    // let sum = answers.iter().map(|&(_, n)| n).sum::<u64>();
+    //println!("{answers:?}");
 }
 
 fn can_build_design(design: &str, designs_memo: &mut FxHashMap<String, bool>) -> bool {
