@@ -10,7 +10,8 @@ fn main() {
 
     let start = Instant::now();
     //part1(PATH);
-    part2(PATH);
+    part1_with_p2(PATH);
+    //part2(PATH);
     println!("{:?}", start.elapsed());
 }
 
@@ -28,6 +29,19 @@ fn part1(path: &str) {
         .map(|&d| u32::from(can_build_design(d, &mut designs_memo)))
         .sum::<u32>();
 
+    println!("{sum}");
+}
+
+fn part1_with_p2(path: &str) {
+    let input = fs::read_to_string(path).unwrap();
+    let (towels, designs) = parse_input(&input);
+
+    let mut designs_memo = FxHashMap::default();
+    let sum = designs
+        .iter()
+        .filter_map(|&d| num_ways_build_design(d, &towels, &mut designs_memo))
+        .filter(|&n| n > 0)
+        .count();
     println!("{sum}");
 }
 
