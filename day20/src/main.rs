@@ -2,7 +2,7 @@
 
 use grid::Grid;
 use pathfinding::prelude::*;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use utils::GridExt;
 
 fn main() {
@@ -77,12 +77,14 @@ fn part2(path: &str) {
                     if val >= 100 {
                         cheats_map
                             .entry(val)
-                            .and_modify(|n: &mut Vec<_>| {
-                                if !n.contains(&(cell, cheat)) {
-                                    n.push((cell, cheat))
-                                }
+                            .and_modify(|n: &mut HashSet<_>| {
+                                n.insert((cell, cheat));
                             })
-                            .or_insert_with(|| vec![(cell, cheat)]);
+                            .or_insert_with(|| {
+                                let mut map = HashSet::new();
+                                map.insert((cell, cheat));
+                                map
+                            });
                     }
                 }
             }
