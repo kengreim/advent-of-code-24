@@ -37,8 +37,7 @@ pub trait GridExt<T> {
 
     fn print(&self)
     where
-        T: std::fmt::Display,
-        String: for<'a> FromIterator<&'a T>;
+        T: std::fmt::Display;
 
     fn cardinal_neighbors(&self, idx: (usize, usize)) -> Vec<((usize, usize), &T)>;
 
@@ -124,10 +123,10 @@ impl<T> GridExt<T> for Grid<T> {
     fn print(&self)
     where
         T: std::fmt::Display,
-        String: for<'a> FromIterator<&'a T>,
     {
         for row in self.iter_rows() {
-            println!("{}", row.collect::<String>());
+            let r = row.map(|s| format!("{s}")).collect::<String>();
+            println!("{r}");
         }
     }
 
