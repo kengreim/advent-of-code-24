@@ -33,7 +33,7 @@ fn solve_cheats(
     min_distance: usize,
     max_distance: usize,
     min_cheat: usize,
-) -> HashMap<usize, HashSet<(Cell, Cell)>> {
+) -> HashMap<usize, Vec<(Cell, Cell)>> {
     let input = std::fs::read_to_string(path).unwrap();
 
     let grid = Grid::parse_from_str(&input, |l| l.trim().chars().collect::<Vec<char>>()).unwrap();
@@ -51,14 +51,10 @@ fn solve_cheats(
                 if n < current_steps && cheat_val >= min_cheat {
                     cheats_map
                         .entry(cheat_val)
-                        .and_modify(|n: &mut HashSet<_>| {
-                            n.insert((cell, cheat));
+                        .and_modify(|n: &mut Vec<_>| {
+                            n.push((cell, cheat));
                         })
-                        .or_insert_with(|| {
-                            let mut map = HashSet::new();
-                            map.insert((cell, cheat));
-                            map
-                        });
+                        .or_insert_with(|| vec![(cell, cheat)]);
                 }
             }
         }
