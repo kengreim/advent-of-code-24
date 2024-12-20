@@ -7,3 +7,4 @@ edition = "2021"
 grid = { workspace = true }
 utils = { path = "../utils" }
 pathfinding = "4.12.0"
+rustc-hash = "2.1.0"
