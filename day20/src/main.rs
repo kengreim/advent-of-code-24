@@ -74,24 +74,22 @@ fn part2(path: &str) {
                 if n < current_steps {
                     let manhattan = cell.0.abs_diff(cheat.0) + cell.1.abs_diff(cheat.1);
                     let val = current_steps - n - manhattan;
-                    cheats_map
-                        .entry(val)
-                        .and_modify(|n: &mut Vec<_>| {
-                            if !n.contains(&(cell, cheat)) {
-                                n.push((cell, cheat))
-                            }
-                        })
-                        .or_insert_with(|| vec![(cell, cheat)]);
+                    if val >= 100 {
+                        cheats_map
+                            .entry(val)
+                            .and_modify(|n: &mut Vec<_>| {
+                                if !n.contains(&(cell, cheat)) {
+                                    n.push((cell, cheat))
+                                }
+                            })
+                            .or_insert_with(|| vec![(cell, cheat)]);
+                    }
                 }
             }
         }
     }
 
-    let sum = cheats_map
-        .iter()
-        .map(|(&n, v)| if n >= 100 { v.len() } else { 0 })
-        .sum::<usize>();
-
+    let sum = cheats_map.values().map(|v| v.len()).sum::<usize>();
     println!("{sum}");
 }
 
