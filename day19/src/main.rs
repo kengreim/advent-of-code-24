@@ -97,22 +97,6 @@ fn num_ways_build_design(
     let previous_res = fn_memo.get(design).copied();
     previous_res.map_or_else(
         || {
-            // Special case because some original towels can actually be built multiple ways
-            // from different towels
-            if original_towels.contains(&design) {
-                let new_towels = original_towels
-                    .iter()
-                    .filter(|s| **s != design)
-                    .copied()
-                    .collect::<Vec<_>>();
-
-                let res =
-                    1 + num_ways_build_design_no_memo(design, &new_towels).unwrap_or_default();
-                fn_memo.insert(design.to_string(), res);
-
-                return Some(res);
-            }
-
             if design.is_empty() {
                 return Some(1);
             }
@@ -155,38 +139,6 @@ fn num_ways_build_design(
             Some(res)
         },
     )
-}
-
-fn num_ways_build_design_no_memo(design: &str, original_towels: &[&str]) -> Option<u64> {
-    if design.is_empty() {
-        return Some(1);
-    }
-
-    let candidates = original_towels
-        .iter()
-        .filter_map(|s| {
-            if design.ends_with(s) {
-                let new_len = design.len() - s.len();
-                Some(design[..new_len].to_owned())
-            } else {
-                None
-            }
-        })
-        .collect::<Vec<_>>();
-
-    if candidates.is_empty() {
-        //println!("No ways to make {design}");
-        return None;
-    }
-
-    let branch_sum = candidates
-        .iter()
-        .filter_map(|left_str| num_ways_build_design_no_memo(left_str, original_towels))
-        .sum::<u64>();
-
-    //println!("There are {branch_sum} extra ways to make {design}");
-
-    Some(branch_sum)
 }
 
 fn parse_input(input: &str) -> (Vec<&str>, Vec<&str>) {
