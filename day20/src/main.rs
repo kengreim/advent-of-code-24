@@ -8,7 +8,7 @@ use utils::GridExt;
 fn main() {
     const PATH: &str = "day20/src/day20_input.txt";
     let start = std::time::Instant::now();
-    //part1(PATH);
+    part1(PATH);
     part2(PATH);
     let end = start.elapsed();
     println!("{:?}", end);
@@ -17,82 +17,54 @@ fn main() {
 type Cell = (usize, usize);
 
 fn part1(path: &str) {
-    let input = std::fs::read_to_string(path).unwrap();
-
-    let grid = Grid::parse_from_str(&input, |l| l.trim().chars().collect::<Vec<char>>()).unwrap();
-    let (start, end) = find_start_and_end(&grid).unwrap();
-    let (path, _) = dijkstra(&start, |&n| successors(&grid, n), |&n| n == end).unwrap();
-
-    let mut moves_grid: Grid<Option<usize>> = Grid::new(grid.rows(), grid.cols());
-    moves_grid.fill(None);
-    for (steps, &cell) in path.iter().rev().enumerate() {
-        moves_grid[cell] = Some(steps);
-    }
-
-    let mut cheats_map = HashMap::new();
-    for cell in path {
-        let current_steps = moves_grid[cell].unwrap();
-        for cheat in find_possible_cheats(&grid, cell, 2) {
-            if let Some(n) = moves_grid[cheat] {
-                if n < current_steps {
-                    let val = current_steps - n - 2;
-                    cheats_map
-                        .entry(val)
-                        .and_modify(|n: &mut Vec<_>| n.push((cell, cheat)))
-                        .or_insert_with(|| vec![(cell, cheat)]);
-                }
-            }
-        }
-    }
-
-    let sum = cheats_map
-        .iter()
-        .map(|(&n, v)| if n >= 100 { v.len() } else { 0 })
-        .sum::<usize>();
-
+    let cheats_map = solve_cheats(path, 2, 2, 100);
+    let sum = cheats_map.values().map(|v| v.len()).sum::<usize>();
     println!("{sum}");
 }
 
 fn part2(path: &str) {
+    let cheats_map = solve_cheats(path, 2, 20, 100);
+    let sum = cheats_map.values().map(|v| v.len()).sum::<usize>();
+    println!("{sum}");
+}
+
+fn solve_cheats(
+    path: &str,
+    min_distance: usize,
+    max_distance: usize,
+    min_cheat: usize,
+) -> HashMap<usize, HashSet<(Cell, Cell)>> {
     let input = std::fs::read_to_string(path).unwrap();
 
     let grid = Grid::parse_from_str(&input, |l| l.trim().chars().collect::<Vec<char>>()).unwrap();
     let (start, end) = find_start_and_end(&grid).unwrap();
     let (path, _) = dijkstra(&start, |&n| successors(&grid, n), |&n| n == end).unwrap();
-
-    let mut moves_grid: Grid<Option<usize>> = Grid::new(grid.rows(), grid.cols());
-    moves_grid.fill(None);
-    for (steps, &cell) in path.iter().rev().enumerate() {
-        moves_grid[cell] = Some(steps);
-    }
+    let distance_grid = make_distance_grid(&grid, &path);
 
     let mut cheats_map = HashMap::new();
     for cell in path {
-        let current_steps = moves_grid[cell].unwrap();
-        for cheat in find_possible_cheats_upto(&grid, cell, 20) {
-            if let Some(n) = moves_grid[cheat] {
-                if n < current_steps {
-                    let manhattan = cell.0.abs_diff(cheat.0) + cell.1.abs_diff(cheat.1);
-                    let val = current_steps - n - manhattan;
-                    if val >= 100 {
-                        cheats_map
-                            .entry(val)
-                            .and_modify(|n: &mut HashSet<_>| {
-                                n.insert((cell, cheat));
-                            })
-                            .or_insert_with(|| {
-                                let mut map = HashSet::new();
-                                map.insert((cell, cheat));
-                                map
-                            });
-                    }
+        let current_steps = distance_grid[cell].unwrap();
+        for cheat in find_possible_cheats(&grid, cell, min_distance, max_distance) {
+            if let Some(n) = distance_grid[cheat] {
+                let manhattan = cell.0.abs_diff(cheat.0) + cell.1.abs_diff(cheat.1);
+                let cheat_val = current_steps - n - manhattan;
+                if n < current_steps && cheat_val >= min_cheat {
+                    cheats_map
+                        .entry(cheat_val)
+                        .and_modify(|n: &mut HashSet<_>| {
+                            n.insert((cell, cheat));
+                        })
+                        .or_insert_with(|| {
+                            let mut map = HashSet::new();
+                            map.insert((cell, cheat));
+                            map
+                        });
                 }
             }
         }
     }
 
-    let sum = cheats_map.values().map(|v| v.len()).sum::<usize>();
-    println!("{sum}");
+    cheats_map
 }
 
 fn print_grid(grid: &Grid<Option<usize>>) {
@@ -100,7 +72,7 @@ fn print_grid(grid: &Grid<Option<usize>>) {
     for row in 0..grid.rows() {
         for col in 0..grid.cols() {
             let cell = if let Some(n) = grid[(row, col)] {
-                &format!("[{:02}]", n)
+                &format!("[{n:02}]")
             } else {
                 "[..]"
             };
@@ -110,6 +82,16 @@ fn print_grid(grid: &Grid<Option<usize>>) {
         s.push('\n');
     }
     println!("{s}");
+}
+
+fn make_distance_grid(grid: &Grid<char>, path: &[Cell]) -> Grid<Option<usize>> {
+    let mut distance_grid: Grid<Option<usize>> = Grid::new(grid.rows(), grid.cols());
+    distance_grid.fill(None);
+    for (steps, &cell) in path.iter().rev().enumerate() {
+        distance_grid[cell] = Some(steps);
+    }
+
+    distance_grid
 }
 
 fn find_start_and_end(grid: &Grid<char>) -> Option<(Cell, Cell)> {
@@ -128,29 +110,15 @@ fn find_start_and_end(grid: &Grid<char>) -> Option<(Cell, Cell)> {
     }
 }
 
-fn find_possible_cheats(grid: &Grid<char>, node: Cell, distance: usize) -> Vec<Cell> {
+fn find_possible_cheats(
+    grid: &Grid<char>,
+    node: Cell,
+    min_distance: usize,
+    max_distance: usize,
+) -> Vec<Cell> {
     let (row, col) = node;
     let mut res = vec![];
-    let offsets = offsets(distance);
-
-    for (r_off, c_off) in offsets {
-        let (r, c) = (row as i32 + r_off, col as i32 + c_off);
-        if r >= 0 && c >= 0 {
-            if let Some(&ch) = grid.get(r, c) {
-                if ch != '#' {
-                    res.push((r as usize, c as usize));
-                }
-            }
-        }
-    }
-
-    res
-}
-
-fn find_possible_cheats_upto(grid: &Grid<char>, node: Cell, distance: usize) -> Vec<Cell> {
-    let (row, col) = node;
-    let mut res = vec![];
-    let offsets = (2..=distance).flat_map(|n| offsets(n));
+    let offsets = (min_distance..=max_distance).flat_map(|n| offsets(n));
 
     for (r_off, c_off) in offsets {
         let (r, c) = (row as i32 + r_off, col as i32 + c_off);
@@ -173,13 +141,13 @@ fn offsets(distance: usize) -> Vec<(i32, i32)> {
         let j = distance - i;
         offsets.push((i as i32, j as i32));
         if i != 0 {
-            offsets.push((-1 * i as i32, j as i32));
+            offsets.push((-(i as i32), j as i32));
         }
         if j != 0 {
-            offsets.push((i as i32, -1 * j as i32));
+            offsets.push((i as i32, -(j as i32)));
         }
         if i != 0 && j != 0 {
-            offsets.push((-1 * i as i32, -1 * j as i32));
+            offsets.push((-(i as i32), -(j as i32)));
         }
     }
 
