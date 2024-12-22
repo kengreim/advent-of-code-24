@@ -1,7 +1,7 @@
 #![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 
 use rayon::prelude::*;
-use std::collections::{HashMap, HashSet};
+use rustc_hash::{FxHashMap, FxHashSet};
 use std::fs;
 use std::time::Instant;
 
@@ -29,7 +29,10 @@ fn part2(path: &str) {
         .map(|n| sequence_bananas(n.trim().parse::<usize>().unwrap(), 2001))
         .collect::<Vec<_>>();
 
-    let possible_sequences = prices.iter().flat_map(|n| n.keys()).collect::<HashSet<_>>();
+    let possible_sequences = prices
+        .iter()
+        .flat_map(|n| n.keys())
+        .collect::<FxHashSet<_>>();
 
     //println!("{}", possible_sequences.len());
 
@@ -68,37 +71,34 @@ fn evolve_n_times(mut secret: usize, n: usize) -> usize {
     secret
 }
 
-fn sequence_bananas(secret: usize, n: usize) -> HashMap<isize, usize> {
+fn sequence_bananas(secret: usize, n: usize) -> FxHashMap<isize, usize> {
     assert!(n > 5, "n must be greater than 5");
 
     let n1 = evolve_bitwise(secret);
     let n2 = evolve_bitwise(n1);
-    let mut n3 = evolve_bitwise(n2);
+    let n3 = evolve_bitwise(n2);
     let mut n4 = evolve_bitwise(n3);
 
-    let mut d1 = sequence_delta(secret % 10, n1 % 10);
-    let mut d2 = sequence_delta(n1 % 10, n2 % 10);
-    let mut d3 = sequence_delta(n2 % 10, n3 % 10);
+    let d1 = sequence_delta(secret % 10, n1 % 10);
+    let d2 = sequence_delta(n1 % 10, n2 % 10);
+    let d3 = sequence_delta(n2 % 10, n3 % 10);
     let mut d4 = sequence_delta(n3 % 10, n4 % 10);
 
     let mut last_price = n4 % 10;
 
-    let mut map = HashMap::new();
-    map.insert(make_key(d1, d2, d3, d4), last_price);
+    let mut map = FxHashMap::default();
+    let mut key = make_key(d1, d2, d3, d4);
+    map.insert(key, last_price);
 
     for _ in 0..(n - 5) {
-        n3 = n4;
-        n4 = evolve_bitwise(n3);
+        n4 = evolve_bitwise(n4);
 
-        d1 = d2;
-        d2 = d3;
-        d3 = d4;
         let new_price = n4 % 10;
         d4 = sequence_delta(last_price, new_price);
         last_price = new_price;
 
-        let key = make_key(d1, d2, d3, d4);
-        map.entry(key).or_insert_with(|| n4 % 10);
+        key = ((key & 0x7FFF) << 5) | (d4 + 9);
+        map.entry(key).or_insert_with(|| new_price);
     }
 
     map
