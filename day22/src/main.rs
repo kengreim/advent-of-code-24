@@ -1,5 +1,6 @@
 #![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 
+use rayon::prelude::*;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::time::Instant;
@@ -24,7 +25,7 @@ fn part1(path: &str) {
 fn part2(path: &str) {
     let input = fs::read_to_string(path).unwrap();
     let prices = input
-        .lines()
+        .par_lines()
         .map(|n| sequence_bananas(n.trim().parse::<usize>().unwrap(), 2001))
         .collect::<Vec<_>>();
 
