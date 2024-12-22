@@ -11,7 +11,7 @@ fn main() {
 }
 
 fn part1() {
-    let inputs = vec!["279A", "341A", "459A", "540A", "085A"];
+    let inputs = vec!["029A", "980A", "179A", "456A", "379A"]; //vec!["279A", "341A", "459A", "540A", "085A"];
 
     let start = Instant::now();
     for i in inputs {
@@ -49,6 +49,8 @@ fn part1() {
             }
         }
 
+        //let min = robot3.iter().min().unwrap();
+
         println!("{i} {min}"); // robot3.first().unwrap().len());
     }
     println!("{:?}", start.elapsed());
@@ -82,6 +84,30 @@ fn all_shortest_paths_for_sequence(output: &str, is_numpad: bool) -> Vec<String>
                 new.push_str(&new_step);
                 new.push('A');
                 all_new.push(new);
+            }
+        }
+        current = next;
+        paths = all_new;
+    }
+
+    paths
+}
+
+fn all_shortest_paths_for_sequence_count_only(output: &str, is_numpad: bool) -> Vec<usize> {
+    let mut paths: Vec<usize> = vec![0usize];
+
+    let mut current = 'A';
+    for next in output.chars() {
+        let mut all_new = vec![];
+        for p in &paths {
+            let new_path = if is_numpad {
+                numpad_shortest_paths(current, next)
+            } else {
+                direction_shortest_paths(current, next)
+            };
+            for new_step in new_path {
+                let s = p + new_step.len();
+                all_new.push(s);
             }
         }
         current = next;
