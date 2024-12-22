@@ -11,6 +11,7 @@ fn main() {
     part2(PATH);
     println!("{:?}", start.elapsed());
 }
+#[allow(dead_code)]
 fn part1(path: &str) {
     let input = fs::read_to_string(path).unwrap();
     let sum = input
@@ -42,9 +43,10 @@ fn part2(path: &str) {
         .max_by_key(|&(_, s)| s)
         .unwrap();
 
-    println!("{:?} {}", max_seq, max_val);
+    println!("{max_seq:?} {max_val}");
 }
 
+#[allow(dead_code)]
 const fn evolve(n: usize) -> usize {
     let n1 = ((n * 64) ^ n) % 16777216;
     let n2 = ((n1 / 32) ^ n1) % 16777216;
@@ -57,6 +59,7 @@ const fn evolve_bitwise(n: usize) -> usize {
     ((n2 << 11) ^ n2) & 16777215
 }
 
+#[allow(dead_code)]
 fn evolve_n_times(mut secret: usize, n: usize) -> usize {
     for _ in 0..n {
         secret = evolve_bitwise(secret);
@@ -65,7 +68,7 @@ fn evolve_n_times(mut secret: usize, n: usize) -> usize {
 }
 
 fn sequence_bananas(secret: usize, n: usize) -> HashMap<Vec<isize>, usize> {
-    assert!(n > 5,);
+    assert!(n > 5, "n must be greater than 5");
 
     let n1 = evolve_bitwise(secret);
     let n2 = evolve_bitwise(n1);
@@ -77,8 +80,10 @@ fn sequence_bananas(secret: usize, n: usize) -> HashMap<Vec<isize>, usize> {
     let mut d3 = sequence_delta(n2 % 10, n3 % 10);
     let mut d4 = sequence_delta(n3 % 10, n4 % 10);
 
+    let mut last_price = n4 % 10;
+
     let mut map = HashMap::new();
-    map.insert(vec![d1, d2, d3, d4], n4 % 10);
+    map.insert(vec![d1, d2, d3, d4], last_price);
 
     for _ in 0..(n - 5) {
         n3 = n4;
@@ -87,7 +92,9 @@ fn sequence_bananas(secret: usize, n: usize) -> HashMap<Vec<isize>, usize> {
         d1 = d2;
         d2 = d3;
         d3 = d4;
-        d4 = sequence_delta(n3 % 10, n4 % 10);
+        let new_price = n4 % 10;
+        d4 = sequence_delta(last_price, new_price);
+        last_price = new_price;
 
         let key = vec![d1, d2, d3, d4];
         map.entry(key).or_insert_with(|| n4 % 10);
