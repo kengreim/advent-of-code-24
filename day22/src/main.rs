@@ -45,9 +45,6 @@ fn part2(path: &str) {
     }
 
     println!("{max_seq:?} {max_val}");
-
-    // let x = sequence_bananas(123, 10);
-    // println!("{:?}", x);
 }
 
 const fn evolve(n: usize) -> usize {
