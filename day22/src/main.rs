@@ -43,7 +43,7 @@ fn part2(path: &str) {
         .max_by_key(|&(_, s)| s)
         .unwrap();
 
-    println!("{max_seq:?} {max_val}");
+    println!("{max_seq} {:?} {max_val}", deconstruct_key(*max_seq));
 }
 
 #[allow(dead_code)]
@@ -67,7 +67,7 @@ fn evolve_n_times(mut secret: usize, n: usize) -> usize {
     secret
 }
 
-fn sequence_bananas(secret: usize, n: usize) -> HashMap<Vec<isize>, usize> {
+fn sequence_bananas(secret: usize, n: usize) -> HashMap<isize, usize> {
     assert!(n > 5, "n must be greater than 5");
 
     let n1 = evolve_bitwise(secret);
@@ -83,7 +83,7 @@ fn sequence_bananas(secret: usize, n: usize) -> HashMap<Vec<isize>, usize> {
     let mut last_price = n4 % 10;
 
     let mut map = HashMap::new();
-    map.insert(vec![d1, d2, d3, d4], last_price);
+    map.insert(make_key(d1, d2, d3, d4), last_price);
 
     for _ in 0..(n - 5) {
         n3 = n4;
@@ -96,7 +96,7 @@ fn sequence_bananas(secret: usize, n: usize) -> HashMap<Vec<isize>, usize> {
         d4 = sequence_delta(last_price, new_price);
         last_price = new_price;
 
-        let key = vec![d1, d2, d3, d4];
+        let key = make_key(d1, d2, d3, d4);
         map.entry(key).or_insert_with(|| n4 % 10);
     }
 
@@ -109,4 +109,16 @@ const fn sequence_delta(n1: usize, n2: usize) -> isize {
     } else {
         -((n1 - n2) as isize)
     }
+}
+
+const fn make_key(n1: isize, n2: isize, n3: isize, n4: isize) -> isize {
+    ((((n1 + 9) << 15) | ((n2 + 9) << 10)) | ((n3 + 9) << 5)) | (n4 + 9)
+}
+
+fn deconstruct_key(n: isize) -> Vec<isize> {
+    let d1 = (n >> 15) - 9;
+    let d2 = ((n >> 10) & 0b11111) - 9;
+    let d3 = ((n >> 5) & 0b11111) - 9;
+    let d4 = (n & 0b11111) - 9;
+    vec![d1, d2, d3, d4]
 }
