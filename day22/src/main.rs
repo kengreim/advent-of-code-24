@@ -1,5 +1,55 @@
+use std::collections::{HashMap, HashSet};
+use std::fs;
+use std::time::Instant;
+
 fn main() {
-    println!("{}", evolve_n_times(123, 10));
+    const PATH: &str = "day22/src/day22_input.txt";
+    //part1(PATH);
+    let start = Instant::now();
+    part2(PATH);
+    println!("{:?}", start.elapsed());
+}
+fn part1(path: &str) {
+    let input = fs::read_to_string(path).unwrap();
+    let sum = input
+        .lines()
+        .map(|n| evolve_n_times(n.trim().parse::<usize>().unwrap(), 2000))
+        .sum::<usize>();
+    println!("{sum}");
+}
+
+fn part2(path: &str) {
+    let input = fs::read_to_string(path).unwrap();
+    let prices = input
+        .lines()
+        .map(|n| sequence_bananas(n.trim().parse::<usize>().unwrap(), 2001))
+        .collect::<Vec<_>>();
+
+    let possible_sequences = prices
+        .iter()
+        .map(|n| n.keys())
+        .flatten()
+        .collect::<HashSet<_>>();
+
+    //println!("{}", possible_sequences.len());
+
+    let mut max_seq = None;
+    let mut max_val = 0;
+    for seq in possible_sequences {
+        let sum = prices
+            .iter()
+            .map(|p| p.get(seq).unwrap_or(&0))
+            .sum::<usize>();
+        if sum > max_val {
+            max_val = sum;
+            max_seq = Some(seq);
+        }
+    }
+
+    println!("{max_seq:?} {max_val}");
+
+    // let x = sequence_bananas(123, 10);
+    // println!("{:?}", x);
 }
 
 fn evolve(n: usize) -> usize {
@@ -21,4 +71,50 @@ fn evolve_n_times(mut secret: usize, n: usize) -> usize {
         secret = evolve_bitwise(secret);
     }
     secret
+}
+
+fn sequence_bananas(secret: usize, n: usize) -> HashMap<Vec<isize>, usize> {
+    if n < 4 {
+        panic!();
+    }
+
+    let n1 = evolve_bitwise(secret);
+    let mut n2 = evolve_bitwise(n1);
+    let mut n3 = evolve_bitwise(n2);
+    let mut n4 = evolve_bitwise(n3);
+
+    let mut d1 = sequence_delta(secret % 10, n1 % 10);
+    let mut d2 = sequence_delta(n1 % 10, n2 % 10);
+    let mut d3 = sequence_delta(n2 % 10, n3 % 10);
+    let mut d4 = sequence_delta(n3 % 10, n4 % 10);
+
+    let mut map = HashMap::new();
+    map.insert(vec![d1, d2, d3, d4], n4 % 10);
+
+    for _ in 0..(n - 5) {
+        //n1 = n2;
+        n2 = n3;
+        n3 = n4;
+        n4 = evolve_bitwise(n3);
+
+        d1 = d2;
+        d2 = d3;
+        d3 = d4;
+        d4 = sequence_delta(n3 % 10, n4 % 10);
+
+        let key = vec![d1, d2, d3, d4];
+        if !map.contains_key(&key) {
+            map.insert(key, n4 % 10);
+        }
+    }
+
+    map
+}
+
+fn sequence_delta(n1: usize, n2: usize) -> isize {
+    if n2 > n1 {
+        (n2 - n1) as isize
+    } else {
+        -((n1 - n2) as isize)
+    }
 }
