@@ -31,20 +31,18 @@ fn part2(path: &str) {
 
     //println!("{}", possible_sequences.len());
 
-    let mut max_seq = None;
-    let mut max_val = 0;
-    for seq in possible_sequences {
-        let sum = prices
-            .iter()
-            .map(|p| p.get(seq).unwrap_or(&0))
-            .sum::<usize>();
-        if sum > max_val {
-            max_val = sum;
-            max_seq = Some(seq);
-        }
-    }
+    let (max_seq, max_val) = possible_sequences
+        .iter()
+        .map(|&s| {
+            (
+                s,
+                prices.iter().map(|p| p.get(s).unwrap_or(&0)).sum::<usize>(),
+            )
+        })
+        .max_by_key(|&(_, s)| s)
+        .unwrap();
 
-    println!("{max_seq:?} {max_val}");
+    println!("{:?} {}", max_seq, max_val);
 }
 
 const fn evolve(n: usize) -> usize {
