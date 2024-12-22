@@ -1,3 +1,5 @@
+#![warn(clippy::all, clippy::pedantic, clippy::nursery)]
+
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::time::Instant;
@@ -25,11 +27,7 @@ fn part2(path: &str) {
         .map(|n| sequence_bananas(n.trim().parse::<usize>().unwrap(), 2001))
         .collect::<Vec<_>>();
 
-    let possible_sequences = prices
-        .iter()
-        .map(|n| n.keys())
-        .flatten()
-        .collect::<HashSet<_>>();
+    let possible_sequences = prices.iter().flat_map(|n| n.keys()).collect::<HashSet<_>>();
 
     //println!("{}", possible_sequences.len());
 
@@ -52,18 +50,16 @@ fn part2(path: &str) {
     // println!("{:?}", x);
 }
 
-fn evolve(n: usize) -> usize {
+const fn evolve(n: usize) -> usize {
     let n1 = ((n * 64) ^ n) % 16777216;
     let n2 = ((n1 / 32) ^ n1) % 16777216;
-    let n3 = ((n2 * 2048) ^ n2) % 16777216;
-    n3
+    ((n2 * 2048) ^ n2) % 16777216
 }
 
-fn evolve_bitwise(n: usize) -> usize {
+const fn evolve_bitwise(n: usize) -> usize {
     let n1 = ((n << 6) ^ n) & 16777215;
     let n2 = ((n1 >> 5) ^ n1) & 16777215;
-    let n3 = ((n2 << 11) ^ n2) & 16777215;
-    n3
+    ((n2 << 11) ^ n2) & 16777215
 }
 
 fn evolve_n_times(mut secret: usize, n: usize) -> usize {
@@ -74,12 +70,10 @@ fn evolve_n_times(mut secret: usize, n: usize) -> usize {
 }
 
 fn sequence_bananas(secret: usize, n: usize) -> HashMap<Vec<isize>, usize> {
-    if n < 4 {
-        panic!();
-    }
+    assert!(n > 5,);
 
     let n1 = evolve_bitwise(secret);
-    let mut n2 = evolve_bitwise(n1);
+    let n2 = evolve_bitwise(n1);
     let mut n3 = evolve_bitwise(n2);
     let mut n4 = evolve_bitwise(n3);
 
@@ -92,8 +86,6 @@ fn sequence_bananas(secret: usize, n: usize) -> HashMap<Vec<isize>, usize> {
     map.insert(vec![d1, d2, d3, d4], n4 % 10);
 
     for _ in 0..(n - 5) {
-        //n1 = n2;
-        n2 = n3;
         n3 = n4;
         n4 = evolve_bitwise(n3);
 
@@ -103,15 +95,13 @@ fn sequence_bananas(secret: usize, n: usize) -> HashMap<Vec<isize>, usize> {
         d4 = sequence_delta(n3 % 10, n4 % 10);
 
         let key = vec![d1, d2, d3, d4];
-        if !map.contains_key(&key) {
-            map.insert(key, n4 % 10);
-        }
+        map.entry(key).or_insert_with(|| n4 % 10);
     }
 
     map
 }
 
-fn sequence_delta(n1: usize, n2: usize) -> isize {
+const fn sequence_delta(n1: usize, n2: usize) -> isize {
     if n2 > n1 {
         (n2 - n1) as isize
     } else {
