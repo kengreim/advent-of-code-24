@@ -64,11 +64,8 @@ const fn evolve_bitwise(n: usize) -> usize {
 }
 
 #[allow(dead_code)]
-fn evolve_n_times(mut secret: usize, n: usize) -> usize {
-    for _ in 0..n {
-        secret = evolve_bitwise(secret);
-    }
-    secret
+fn evolve_n_times(secret: usize, n: usize) -> usize {
+    (0..n).fold(secret, |acc, _| evolve_bitwise(acc))
 }
 
 fn sequence_bananas(secret: usize, n: usize) -> FxHashMap<isize, usize> {
