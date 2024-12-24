@@ -1,11 +1,10 @@
-use petgraph::graph::DiGraph;
-use petgraph::Direction;
+use petgraph::graph::{DiGraph, NodeIndex};
+use petgraph::{Direction, Graph};
 use regex::Regex;
 use std::collections::{HashMap, VecDeque};
 use std::sync::LazyLock;
 
 static WIRE_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"([a-z0-9]{3}): ([01])").unwrap());
-
 static GATE_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"([a-z0-9]{3}) (AND|OR|XOR) ([a-z0-9]{3}) -> ([a-z0-9]{3})").unwrap()
 });
@@ -33,66 +32,13 @@ fn main() {
 
 fn part1(path: &str) {
     let input = std::fs::read_to_string(path).unwrap();
+    let (mut g, map) = build_graph(&input);
 
-    let mut map = HashMap::new();
-
-    let mut g = DiGraph::new();
-
-    // Load initial nodes
-    for c in WIRE_RE.captures_iter(&input) {
-        let node = c.get(1).unwrap().as_str();
-        let val = c.get(2).unwrap().as_str().parse::<u8>().unwrap();
-        let new_node = GateNode {
-            name: node.to_string(),
-            logic: Logic::NONE,
-            value: Some(val != 0),
-        };
-        let index = g.add_node(new_node);
-        map.insert(node, index);
-    }
-
-    // Load all gate nodes
-    for c in GATE_RE.captures_iter(&input) {
-        let input_nodes = [c.get(1).unwrap().as_str(), c.get(3).unwrap().as_str()];
-        let input_node_indices = input_nodes.map(|n| {
-            if let Some(node) = map.get(n) {
-                *node
-            } else {
-                let new_node = GateNode {
-                    name: n.to_string(),
-                    logic: Logic::UNKNOWN,
-                    value: None,
-                };
-                let index = g.add_node(new_node);
-                map.insert(n, index);
-                index
-            }
-        });
-
-        let output_node_str = c.get(4).unwrap().as_str();
-        let logic = match c.get(2).unwrap().as_str() {
-            "OR" => Logic::OR,
-            "AND" => Logic::AND,
-            "XOR" => Logic::XOR,
-            _ => panic!(),
-        };
-        let output_node_index = if let Some(node) = map.get(output_node_str) {
-            g[*node].logic = logic;
-            *node
-        } else {
-            let new_node = GateNode {
-                name: output_node_str.to_string(),
-                logic,
-                value: None,
-            };
-            let index = g.add_node(new_node);
-            map.insert(output_node_str, index);
-            index
-        };
-
-        g.add_edge(input_node_indices[0], output_node_index, ());
-        g.add_edge(input_node_indices[1], output_node_index, ());
-    }
+    let x = map
+        .keys()
+        .filter(|k| !k.starts_with("x") || !k.starts_with('y'))
+        .collect::<Vec<_>>();
+    println!("{:?}", x.len());
 
     let mut queue = VecDeque::from_iter(g.node_indices());
 
@@ -129,19 +75,73 @@ fn part1(path: &str) {
         .filter(|k| k.starts_with('z'))
         .collect::<Vec<_>>();
     z_nodes.sort_unstable();
-    //println!("{:?}", z_nodes);
-    //
-    // let z_vals = z_nodes
-    //     .iter()
-    //     .map(|&n| g[*map.get(n).unwrap()].value)
-    //     .collect::<Vec<_>>();
-    // println!("{:?}", z_vals);
 
-    let mut final_output = 0;
-    for &z_node in z_nodes.iter().rev() {
-        let &index = map.get(z_node).unwrap();
-        final_output = (final_output << 1) | g[index].value.unwrap() as usize
+    let final_output = z_nodes.iter().rev().fold(0, |acc, &index| {
+        (acc << 1) | g[*map.get(index).unwrap()].value.unwrap() as usize
+    });
+
+    println!("{final_output}");
+}
+
+fn build_graph(input: &str) -> (Graph<GateNode, ()>, HashMap<&str, NodeIndex>) {
+    let mut map = HashMap::new();
+    let mut g = DiGraph::new();
+
+    // Load initial nodes
+    for c in WIRE_RE.captures_iter(&input) {
+        let node = c.get(1).unwrap().as_str();
+        let val = c.get(2).unwrap().as_str().parse::<u8>().unwrap();
+        let new_node = GateNode {
+            name: node.to_string(),
+            logic: Logic::NONE,
+            value: Some(val != 0),
+        };
+        let index = g.add_node(new_node);
+        map.insert(node, index);
     }
 
-    println!("{}", final_output);
+    // Load all gate nodes
+    for c in GATE_RE.captures_iter(&input) {
+        let input_nodes = [c.get(1).unwrap().as_str(), c.get(3).unwrap().as_str()];
+        let input_node_indices = input_nodes.map(|n| {
+            if let Some(&node) = map.get(n) {
+                node
+            } else {
+                let new_node = GateNode {
+                    name: n.to_string(),
+                    logic: Logic::UNKNOWN,
+                    value: None,
+                };
+                let index = g.add_node(new_node);
+                map.insert(n, index);
+                index
+            }
+        });
+
+        let output_node_str = c.get(4).unwrap().as_str();
+        let logic = match c.get(2).unwrap().as_str() {
+            "OR" => Logic::OR,
+            "AND" => Logic::AND,
+            "XOR" => Logic::XOR,
+            _ => panic!(),
+        };
+        let output_node_index = if let Some(&node) = map.get(output_node_str) {
+            g[node].logic = logic;
+            node
+        } else {
+            let new_node = GateNode {
+                name: output_node_str.to_string(),
+                logic,
+                value: None,
+            };
+            let index = g.add_node(new_node);
+            map.insert(output_node_str, index);
+            index
+        };
+
+        g.add_edge(input_node_indices[0], output_node_index, ());
+        g.add_edge(input_node_indices[1], output_node_index, ());
+    }
+
+    (g, map)
 }
