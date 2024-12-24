@@ -5,11 +5,14 @@ use petgraph::visit::{GetAdjacencyMatrix, IntoNeighbors, IntoNodeIdentifiers};
 use petgraph::Graph;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
+use std::time::Instant;
 
 fn main() {
     const PATH: &str = "day23/src/day23_input.txt";
+    let start = Instant::now();
     part1(PATH);
     part2(PATH);
+    println!("{:?}", start.elapsed());
 }
 
 fn part1(path: &str) {
@@ -52,32 +55,25 @@ fn part2(path: &str) {
 }
 
 fn build_graph(input: &str) -> UnGraph<&str, ()> {
-    let connections = input
-        .lines()
-        .map(|s| (&s[0..2], &s[3..]))
-        .collect::<Vec<_>>();
-
+    let connections = input.lines().map(|s| vec![&s[0..2], &s[3..]]);
     let mut nodes = HashMap::new();
-
     let mut g: Graph<&str, (), _> = UnGraph::new_undirected();
-    for (c1, c2) in connections {
-        let c1_node = if let Some(node) = nodes.get(&c1) {
-            *node
-        } else {
-            let index = g.add_node(c1);
-            nodes.insert(c1, index);
-            index
-        };
 
-        let c2_node = if let Some(node) = nodes.get(&c2) {
-            *node
-        } else {
-            let index = g.add_node(c2);
-            nodes.insert(c2, index);
-            index
-        };
+    for edge in connections {
+        let edge_nodes = edge
+            .iter()
+            .map(|&n| {
+                if let Some(node) = nodes.get(&n) {
+                    *node
+                } else {
+                    let index = g.add_node(n);
+                    nodes.insert(n, index);
+                    index
+                }
+            })
+            .collect::<Vec<_>>();
 
-        g.add_edge(c1_node, c2_node, ());
+        g.add_edge(edge_nodes[0], edge_nodes[1], ());
     }
 
     g
