@@ -1,8 +1,8 @@
 #![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 
 use petgraph::dot::{Config, Dot};
-use petgraph::graph::{DiGraph, NodeIndex};
-use petgraph::{Direction, Graph};
+use petgraph::graph::{DiGraph, Node, NodeIndex};
+use petgraph::{Directed, Direction, Graph};
 use regex::Regex;
 use std::collections::{HashMap, VecDeque};
 use std::fs;
@@ -31,14 +31,103 @@ struct GateNode {
 
 fn main() {
     const PATH: &str = "day24/src/day24_input.txt";
-    part1(PATH);
+    //part1(PATH);
+    part2(PATH);
 }
 
 fn part1(path: &str) {
-    let input = std::fs::read_to_string(path).unwrap();
+    //-> (Graph<GateNode, ()>, HashMap<&str, NodeIndex>) {
+    let input = fs::read_to_string(path).unwrap();
     let (mut g, map) = build_graph(&input);
-    let mut queue = g.node_indices().collect::<VecDeque<_>>();
 
+    execute_circuit(&mut g);
+
+    let mut z_nodes = map
+        .keys()
+        .filter(|k| k.starts_with('z'))
+        .collect::<Vec<_>>();
+    z_nodes.sort_unstable();
+
+    let final_output = z_nodes.iter().rev().fold(0, |acc, &index| {
+        (acc << 1) | g[*map.get(index).unwrap()].value.unwrap() as usize
+    });
+    println!("{final_output}");
+
+    let viz_output = Dot::with_config(&g, &[Config::EdgeNoLabel]);
+    fs::write("day24/src/viz.dot", format!("{viz_output:?}")).unwrap();
+}
+
+fn part2(path: &str) {
+    let input = fs::read_to_string(path).unwrap();
+    let (mut g, map) = build_graph(&input);
+    execute_circuit(&mut g);
+
+    let x_indices = sorted_nodes_start_with('x', &map);
+    let y_indices = sorted_nodes_start_with('y', &map);
+    let z_indices = sorted_nodes_start_with('z', &map);
+
+    assert_eq!(x_indices.len(), y_indices.len());
+    assert_eq!(x_indices.len() + 1, z_indices.len());
+
+    for i in 1..x_indices.len() {
+        check_circuit(&g, x_indices[i], y_indices[i]);
+    }
+}
+
+fn check_circuit(g: &Graph<GateNode, ()>, x_index: NodeIndex, y_index: NodeIndex) {
+    let x_neighbors = g.neighbors(x_index).collect::<Vec<_>>();
+    let y_neighbors = g.neighbors(y_index).collect::<Vec<_>>();
+    assert_eq!(x_neighbors.len(), 2);
+    assert_eq!(y_neighbors.len(), 2);
+
+    // Confirmed that all x## and y## lead to the same AND and XOR
+    // if x_neighbors[0] == y_neighbors[0] {
+    //     if x_neighbors[1] != y_neighbors[1] {
+    //         println!("Error with {:?} {:?}", g[x_index], g[y_index]);
+    //     }
+    //     println!("{:?} {:?} OK!", g[x_index], g[y_index]);
+    // } else if x_neighbors[0] == y_neighbors[1] {
+    //     if x_neighbors[1] != y_neighbors[0] {
+    //         println!("Error with {:?} {:?}", g[x_index], g[y_index]);
+    //     }
+    //     println!("{:?} {:?} OK!", g[x_index], g[y_index]);
+    // } else {
+    //     println!("Error with {:?} {:?}", g[x_index], g[y_index]);
+    // }
+
+    let xor1_index = if g[x_neighbors[0]].logic == Logic::Xor {
+        x_neighbors[0]
+    } else {
+        x_neighbors[1]
+    };
+
+    let xor1_neighbors = g.neighbors(xor1_index).collect::<Vec<_>>();
+    if xor1_neighbors.len() != 2 {
+        println!("Error at {:?}", g[xor1_index]);
+    } else {
+        let xor2_index = if g[xor1_neighbors[0]].logic == Logic::Xor {
+            xor1_neighbors[0]
+        } else {
+            xor1_neighbors[1]
+        };
+        println!(
+            "{} {} {}",
+            g[x_index].name, g[y_index].name, g[xor2_index].name
+        );
+    }
+}
+
+fn sorted_nodes_start_with(c: char, map: &HashMap<&str, NodeIndex>) -> Vec<NodeIndex> {
+    let mut nodes = map.keys().filter(|k| k.starts_with(c)).collect::<Vec<_>>();
+    nodes.sort_unstable();
+    nodes
+        .iter()
+        .map(|&n| *map.get(n).unwrap())
+        .collect::<Vec<_>>()
+}
+
+fn execute_circuit(g: &mut Graph<GateNode, (), Directed>) {
+    let mut queue = g.node_indices().collect::<VecDeque<_>>();
     while !queue.is_empty() {
         let node = queue.pop_front().unwrap();
         let inputs = g
@@ -63,23 +152,6 @@ fn part1(path: &str) {
             _ => panic!(),
         }
     }
-
-    let mut z_nodes = map
-        .keys()
-        .filter(|k| k.starts_with('z'))
-        .collect::<Vec<_>>();
-    z_nodes.sort_unstable();
-
-    let final_output = z_nodes.iter().rev().fold(0, |acc, &index| {
-        (acc << 1) | g[*map.get(index).unwrap()].value.unwrap() as usize
-    });
-
-    println!("{final_output}");
-
-    let viz_output = Dot::with_config(&g, &[Config::EdgeNoLabel]);
-    fs::write("day24/src/viz.dot", format!("{viz_output:?}")).unwrap();
-
-    //println!("{:?}", Dot::with_config(&g, &[Config::EdgeNoLabel]));
 }
 
 fn build_graph(input: &str) -> (Graph<GateNode, ()>, HashMap<&str, NodeIndex>) {
