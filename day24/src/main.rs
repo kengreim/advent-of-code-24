@@ -1,7 +1,7 @@
 #![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 
 use petgraph::dot::{Config, Dot};
-use petgraph::graph::{DiGraph, Node, NodeIndex};
+use petgraph::graph::{DiGraph, NodeIndex};
 use petgraph::{Directed, Direction, Graph};
 use regex::Regex;
 use std::collections::{HashMap, VecDeque};
@@ -81,19 +81,19 @@ fn check_circuit(g: &Graph<GateNode, ()>, x_index: NodeIndex, y_index: NodeIndex
     assert_eq!(y_neighbors.len(), 2);
 
     // Confirmed that all x## and y## lead to the same AND and XOR
-    // if x_neighbors[0] == y_neighbors[0] {
-    //     if x_neighbors[1] != y_neighbors[1] {
-    //         println!("Error with {:?} {:?}", g[x_index], g[y_index]);
-    //     }
-    //     println!("{:?} {:?} OK!", g[x_index], g[y_index]);
-    // } else if x_neighbors[0] == y_neighbors[1] {
-    //     if x_neighbors[1] != y_neighbors[0] {
-    //         println!("Error with {:?} {:?}", g[x_index], g[y_index]);
-    //     }
-    //     println!("{:?} {:?} OK!", g[x_index], g[y_index]);
-    // } else {
-    //     println!("Error with {:?} {:?}", g[x_index], g[y_index]);
-    // }
+    if x_neighbors[0] == y_neighbors[0] {
+        if x_neighbors[1] != y_neighbors[1] {
+            println!("Error with {:?} {:?}", g[x_index], g[y_index]);
+        }
+        //println!("{:?} {:?} OK!", g[x_index], g[y_index]);
+    } else if x_neighbors[0] == y_neighbors[1] {
+        if x_neighbors[1] != y_neighbors[0] {
+            println!("Error with {:?} {:?}", g[x_index], g[y_index]);
+        }
+        //println!("{:?} {:?} OK!", g[x_index], g[y_index]);
+    } else {
+        println!("Error with {:?} {:?}", g[x_index], g[y_index]);
+    }
 
     let xor1_index = if g[x_neighbors[0]].logic == Logic::Xor {
         x_neighbors[0]
@@ -110,10 +110,14 @@ fn check_circuit(g: &Graph<GateNode, ()>, x_index: NodeIndex, y_index: NodeIndex
         } else {
             xor1_neighbors[1]
         };
-        println!(
-            "{} {} {}",
-            g[x_index].name, g[y_index].name, g[xor2_index].name
-        );
+
+        if !g[xor2_index].name.starts_with('z') {
+            println!(
+                "Error with {:?}. Should be z{}",
+                g[xor2_index],
+                g[x_index].name[1..].to_owned()
+            );
+        }
     }
 }
 
