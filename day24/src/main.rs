@@ -1,9 +1,11 @@
 #![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 
+use petgraph::dot::{Config, Dot};
 use petgraph::graph::{DiGraph, NodeIndex};
 use petgraph::{Direction, Graph};
 use regex::Regex;
 use std::collections::{HashMap, VecDeque};
+use std::fs;
 use std::sync::LazyLock;
 
 static WIRE_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"([a-z0-9]{3}): ([01])").unwrap());
@@ -73,6 +75,11 @@ fn part1(path: &str) {
     });
 
     println!("{final_output}");
+
+    let viz_output = Dot::with_config(&g, &[Config::EdgeNoLabel]);
+    fs::write("day24/src/viz.dot", format!("{viz_output:?}")).unwrap();
+
+    //println!("{:?}", Dot::with_config(&g, &[Config::EdgeNoLabel]));
 }
 
 fn build_graph(input: &str) -> (Graph<GateNode, ()>, HashMap<&str, NodeIndex>) {
