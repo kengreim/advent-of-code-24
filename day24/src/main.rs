@@ -1,3 +1,5 @@
+#![warn(clippy::all, clippy::pedantic, clippy::nursery)]
+
 use petgraph::graph::{DiGraph, NodeIndex};
 use petgraph::{Direction, Graph};
 use regex::Regex;
@@ -11,11 +13,11 @@ static GATE_RE: LazyLock<Regex> = LazyLock::new(|| {
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 enum Logic {
-    OR,
-    AND,
-    XOR,
-    UNKNOWN,
-    NONE,
+    Or,
+    And,
+    Xor,
+    Unknown,
+    None,
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
@@ -33,14 +35,7 @@ fn main() {
 fn part1(path: &str) {
     let input = std::fs::read_to_string(path).unwrap();
     let (mut g, map) = build_graph(&input);
-
-    let x = map
-        .keys()
-        .filter(|k| !k.starts_with("x") || !k.starts_with('y'))
-        .collect::<Vec<_>>();
-    println!("{:?}", x.len());
-
-    let mut queue = VecDeque::from_iter(g.node_indices());
+    let mut queue = g.node_indices().collect::<VecDeque<_>>();
 
     while !queue.is_empty() {
         let node = queue.pop_front().unwrap();
@@ -51,14 +46,11 @@ fn part1(path: &str) {
         match inputs.len() {
             0 => continue,
             2 => {
-                let input1 = inputs[0];
-                let input2 = inputs[1];
-
-                if let (Some(val1), Some(val2)) = (g[input1].value, g[input2].value) {
+                if let (Some(val1), Some(val2)) = (g[inputs[0]].value, g[inputs[1]].value) {
                     let new_bool = match g[node].logic {
-                        Logic::OR => val1 || val2,
-                        Logic::AND => val1 && val2,
-                        Logic::XOR => (val1 && !val2) || (!val1 && val2),
+                        Logic::Or => val1 || val2,
+                        Logic::And => val1 && val2,
+                        Logic::Xor => (val1 && !val2) || (!val1 && val2),
                         _ => panic!(),
                     };
                     g[node].value = Some(new_bool);
@@ -88,12 +80,12 @@ fn build_graph(input: &str) -> (Graph<GateNode, ()>, HashMap<&str, NodeIndex>) {
     let mut g = DiGraph::new();
 
     // Load initial nodes
-    for c in WIRE_RE.captures_iter(&input) {
+    for c in WIRE_RE.captures_iter(input) {
         let node = c.get(1).unwrap().as_str();
         let val = c.get(2).unwrap().as_str().parse::<u8>().unwrap();
         let new_node = GateNode {
             name: node.to_string(),
-            logic: Logic::NONE,
+            logic: Logic::None,
             value: Some(val != 0),
         };
         let index = g.add_node(new_node);
@@ -101,7 +93,7 @@ fn build_graph(input: &str) -> (Graph<GateNode, ()>, HashMap<&str, NodeIndex>) {
     }
 
     // Load all gate nodes
-    for c in GATE_RE.captures_iter(&input) {
+    for c in GATE_RE.captures_iter(input) {
         let input_nodes = [c.get(1).unwrap().as_str(), c.get(3).unwrap().as_str()];
         let input_node_indices = input_nodes.map(|n| {
             if let Some(&node) = map.get(n) {
@@ -109,7 +101,7 @@ fn build_graph(input: &str) -> (Graph<GateNode, ()>, HashMap<&str, NodeIndex>) {
             } else {
                 let new_node = GateNode {
                     name: n.to_string(),
-                    logic: Logic::UNKNOWN,
+                    logic: Logic::Unknown,
                     value: None,
                 };
                 let index = g.add_node(new_node);
@@ -120,9 +112,9 @@ fn build_graph(input: &str) -> (Graph<GateNode, ()>, HashMap<&str, NodeIndex>) {
 
         let output_node_str = c.get(4).unwrap().as_str();
         let logic = match c.get(2).unwrap().as_str() {
-            "OR" => Logic::OR,
-            "AND" => Logic::AND,
-            "XOR" => Logic::XOR,
+            "OR" => Logic::Or,
+            "AND" => Logic::And,
+            "XOR" => Logic::Xor,
             _ => panic!(),
         };
         let output_node_index = if let Some(&node) = map.get(output_node_str) {
